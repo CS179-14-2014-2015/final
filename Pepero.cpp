@@ -438,6 +438,25 @@ int Timer::get_ticks(){
 bool Timer::is_started(){return started;}
 bool Timer::is_paused(){return paused;}
 
+
+void levelOne(){
+
+ 				//Clear screen
+				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+				SDL_RenderClear( gRenderer );
+
+				//Update screen
+				SDL_RenderPresent( gRenderer );
+}
+
+void levelTwo(){
+
+}
+
+void levelThree(){
+
+}
+
 int main( int argc, char* args[] )
 {
 
@@ -461,7 +480,9 @@ int main( int argc, char* args[] )
 			//Event handler
 			SDL_Event e;
 			Timer fps;
+
 			// Game Object initialization
+
 
 			//While application is running
 			while( !quit )
@@ -478,12 +499,9 @@ int main( int argc, char* args[] )
 				}
 
 
-				//Clear screen
-				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
-				SDL_RenderClear( gRenderer );
+    levelOne();
 
-				//Update screen
-				SDL_RenderPresent( gRenderer );
+				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
        				SDL_Delay( ( 1000 / FPS ) - fps.get_ticks() );
        			}
