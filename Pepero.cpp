@@ -355,6 +355,7 @@ int LTexture::getHeight()
 // Don't forget to free() all textures at close()
 
 LTexture playerSprite;
+LTexture landSprite;
 
 const int PLAYER_ANIMATION_FRAMES = 6;
 SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
@@ -421,9 +422,10 @@ bool loadMedia()
 
 	 if( !playerSprite.loadFromFile( "Assets/player.png" ) )
 	 {
-	 	printf( "Failed to load texture!\n" );
+	 	printf( "Failed to load player texture!\n" );
 	 	success = false;
 	 }
+
 	 else{
         for (int i = 0; i < 3; i++)
         {
@@ -440,13 +442,18 @@ bool loadMedia()
             gSpriteClips[i].h = 32;
         }
 	 }
-
+  if( !landSprite.loadFromFile( "Assets/platform.png" ) )
+	 {
+	 	printf( "Failed to load land texture!\n" );
+	 	success = false;
+	 }
     return success;
 }
 
 void close()
 {
 	//Free loaded images
+	landSprite.free();
 	playerSprite.free();
 
 	//Destroy window
@@ -552,13 +559,13 @@ LandTile::LandTile(float x, float y){
 LandTile::~LandTile(){}
 
 void LandTile::render(){
-
+  landSprite.render(posX,posY);
 }
 
 LandTileGroup::LandTileGroup(std::vector<float> &x, std::vector<float> &y){
  if (x.empty() || y.empty()){
    for (int i = 0; i <= SCREEN_WIDTH/2; i++){
-     container.emplace_back(50*i, 50);
+     container.emplace_back(landSprite.getWidth()*i, SCREEN_HEIGHT-landSprite.getHeight());
    }
  }
  else{
@@ -568,13 +575,23 @@ LandTileGroup::LandTileGroup(std::vector<float> &x, std::vector<float> &y){
  }
 }
 
-void levelOne(Player &player){
+void LandTileGroup::render(){
+ for (auto &x : container){
+   x.render();
+ }
+}
+
+LandTileGroup::~LandTileGroup(){};
+
+void levelOne(Player &player, LandTileGroup &landtile){
+
+    //logic
 
  				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
-
-        player.render();
+    landtile.render();
+    player.render();
 
 				//Update screen
 				SDL_RenderPresent( gRenderer );
@@ -613,8 +630,10 @@ int main( int argc, char* args[] )
 			Timer fps;
 
 			// Game Object initialization
-      Player player(100,100);
-
+   Player player(100,100);
+   std::vector<float> x;
+   std::vector<float> y;
+   LandTileGroup landtile(x,y);
 			//While application is running
 			while( !quit )
 			{
@@ -629,7 +648,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelOne(player);
+        levelOne(player, landtile);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
