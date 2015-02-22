@@ -195,78 +195,6 @@ bool Timer::is_paused(){return paused;}
 
 
 
-//Scene textures should be initiated here
-// All pictures/media/TTF should be in loadMedia()
-// Don't forget to free() all textures at close()
-
-const int PLAYER_ANIMATION_FRAMES = 3;
-SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
-
-
-
-class Player{
- public:
- Player(float, float);
- ~Player();
- void update();
- void render();
- void move(SDL_Event &e);
-
- private:
-  double posX, posY;
-  // Physics
-  double Gravity = 4.75;
-  double gCap = 6.6;
-  double gVel = 0;
-  Vector2D center;
-  float width = 0;
-  float height = 0;
-  // Rendering
-  SDL_Rect* currentClip = &gSpriteClips[1];
-  bool spriteFlag = false;
-
-};
-
-
-Player::Player(float x, float y){
- posX = x;
- posY = y;
- center.x = posX+width;
- center.y = posY+height;
-}
-
-Player::~Player(){}
-
-void Player::update(){
- posY = posY + gVel;
- gVel = gVel + Gravity;
- if (gVel > gCap){
-  gVel = gCap;
- }
-};
-
-void Player::render(){
-//  if ()
-//   currentClip = &gSpriteClips[1];
-//  else if (angle < 0 && spriteFlag){
-//   currentClip = &gSpriteClips[0];
-//   spriteFlag = false;
-//  }
-//  else {
-//   currentClip = &gSpriteClips[2];
-//   spriteFlag = true;
-//  }
-
- }
-
-void Player::move(SDL_Event &e){
-
-//Movement Code here
-
-
-}
-
-
 //Starts up SDL and creates window
 bool init();
 
@@ -509,7 +437,94 @@ void close()
 }
 
 
+//Scene textures should be initiated here
+// All pictures/media/TTF should be in loadMedia()
+// Don't forget to free() all textures at close()
 
+const int PLAYER_ANIMATION_FRAMES = 3;
+SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
+
+
+
+class Player{
+ public:
+ Player(float, float);
+ ~Player();
+ void update();
+ void render();
+ void move(SDL_Event &e);
+
+ private:
+  double posX, posY;
+  // Physics
+  double Gravity = 4.75;
+  double gCap = 6.6;
+  double gVel = 0;
+  Vector2D center;
+  float width = 0;
+  float height = 0;
+  // Rendering
+  SDL_Rect* currentClip = &gSpriteClips[1];
+  bool spriteFlag = false;
+
+};
+
+
+class LandTile{
+  public:
+    LandTile(float x, float y);
+    ~LandTile();
+
+  private:
+    float posX, posY;
+    float width, height;
+};
+
+Player::Player(float x, float y){
+ posX = x;
+ posY = y;
+ center.x = posX+width;
+ center.y = posY+height;
+}
+
+Player::~Player(){}
+
+void Player::update(){
+ posY = posY + gVel;
+ gVel = gVel + Gravity;
+ if (gVel > gCap){
+  gVel = gCap;
+ }
+};
+
+void Player::render(){
+//  if ()
+//   currentClip = &gSpriteClips[1];
+//  else if (angle < 0 && spriteFlag){
+//   currentClip = &gSpriteClips[0];
+//   spriteFlag = false;
+//  }
+//  else {
+//   currentClip = &gSpriteClips[2];
+//   spriteFlag = true;
+//  }
+
+ }
+
+void Player::move(SDL_Event &e){
+
+//Movement Code here
+
+
+}
+
+
+LandTile::LandTile(float x, float y){
+  posX = x;
+  posY = y;
+}
+
+LandTile::~LandTile(){}
 
 void levelOne(){
 
