@@ -445,33 +445,6 @@ void close()
 const int PLAYER_ANIMATION_FRAMES = 3;
 SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
 
-
-
-class Player{
- public:
- Player(float, float);
- ~Player();
- void update();
- void render();
- void move(SDL_Event &e);
- void LandTileCollision();
-
- private:
-  double posX, posY;
-  // Physics
-  double Gravity = 4.75;
-  double gCap = 6.6;
-  double gVel = 0;
-  Vector2D center;
-  float width = 0;
-  float height = 0;
-  // Rendering
-  SDL_Rect* currentClip = &gSpriteClips[1];
-  bool spriteFlag = false;
-
-};
-
-
 class LandTile{
   public:
     LandTile(float x, float y);
@@ -490,6 +463,33 @@ class LandTileGroup{
    void render();
    std::vector<LandTile> container;
 };
+
+class Player{
+ public:
+ Player(float, float);
+ ~Player();
+ void update();
+ void render();
+ void move(SDL_Event &e);
+ void LandTileCollision(LandTileGroup &landtiles);
+
+ private:
+  double posX, posY;
+  // Physics
+  double Gravity = 4.75;
+  double gCap = 6.6;
+  double gVel = 0;
+  Vector2D center;
+  float width = 0;
+  float height = 0;
+  // Rendering
+  SDL_Rect* currentClip = &gSpriteClips[1];
+  bool spriteFlag = false;
+
+};
+
+
+
 
 Player::Player(float x, float y){
  posX = x;
