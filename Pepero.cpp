@@ -530,6 +530,15 @@ void Player::move(SDL_Event &e){
 }
 
 
+void Player::LandTileCollision(LandTileGroup &landtiles){
+ for (auto &x : landtiles.container){
+   // if collided
+
+   // else
+ }
+
+}
+
 LandTile::LandTile(float x, float y){
   posX = x;
   posY = y;
