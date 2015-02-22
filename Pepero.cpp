@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <stdlib.h>
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 900;
@@ -472,18 +473,19 @@ class LandTile{
     LandTile(float x, float y);
     ~LandTile();
     void render();
-
-  private:
-    float posX, posY;
+    float posX;
+    float posY;
     float width, height;
 };
 
 class LandTileGroup{
  public:
-   LandTileGroup(std::vector<float> &x, std::vector<float> &y);
+   LandTileGroup(float x, float y);
    ~LandTileGroup();
+   void move();
    void render();
    std::vector<LandTile> container;
+
 };
 
 class Player{
@@ -562,17 +564,31 @@ void LandTile::render(){
   landSprite.render(posX,posY);
 }
 
-LandTileGroup::LandTileGroup(std::vector<float> &x, std::vector<float> &y){
- if (x.empty() || y.empty()){
-   for (int i = 0; i <= SCREEN_WIDTH/2; i++){
+LandTileGroup::LandTileGroup(float x , float y ){
+ if (x == NULL || y == NULL){
+   for (int i = 0; i <= SCREEN_WIDTH/landSprite.getWidth(); i++){
      container.emplace_back(landSprite.getWidth()*i, SCREEN_HEIGHT-landSprite.getHeight());
    }
  }
  else{
-   for(int i = 0; i <= x.size(); i++){
-     container.emplace_back(x[i], y[i]);
+   for(int i = 0; i <= rand() % 5 + 2 ; i++){
+     container.emplace_back(x + i*landSprite.getWidth(), y);
    }
  }
+}
+
+void LandTileGroup::move(){
+ for (auto &x : container){
+   x.posX -= 10;
+ }
+
+ if (container[0].posX < 0){
+   int y = rand() % (SCREEN_HEIGHT - 100) + 50;
+   for (int i = 0; i <= rand() % 5 + 2 ; i++){
+     container[i].posX = SCREEN_WIDTH + i*landSprite.getWidth();
+     container[i].posY = y;
+     }
+   }
 }
 
 void LandTileGroup::render(){
@@ -583,14 +599,16 @@ void LandTileGroup::render(){
 
 LandTileGroup::~LandTileGroup(){};
 
-void levelOne(Player &player, LandTileGroup &landtile){
-
+void levelOne(Player &player){
+    static LandTileGroup land(0,0);
+    static LandTileGroup randomLand(SCREEN_WIDTH, rand() % SCREEN_HEIGHT);
     //logic
-
+    randomLand.move();
  				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
-    landtile.render();
+    land.render();
+    randomLand.render();
     player.render();
 
 				//Update screen
@@ -624,16 +642,13 @@ int main( int argc, char* args[] )
 		{
 			//Main loop flag
 			bool quit = false;
-
+   srand(time(0));
 			//Event handler
 			SDL_Event e;
 			Timer fps;
 
 			// Game Object initialization
    Player player(100,100);
-   std::vector<float> x;
-   std::vector<float> y;
-   LandTileGroup landtile(x,y);
 			//While application is running
 			while( !quit )
 			{
@@ -648,7 +663,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelOne(player, landtile);
+        levelOne(player);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
