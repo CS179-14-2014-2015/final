@@ -3,10 +3,11 @@
 #include <SDL2/SDL_image.h>
 #include <stdio.h>
 #include <string>
+#include <vector>
 
 //Screen dimension constants
-const int SCREEN_WIDTH = 900;
-const int SCREEN_HEIGHT = 500;
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 600;
 
 const int FPS = 30;
 //The window we'll be rendering to
@@ -61,9 +62,137 @@ class LTexture
 		int mHeight;
 };
 
-//Scene textures should be initiated here
-// All pictures/media/TTF should be in loadMedia()
-// Don't forget to free() all textures at close()
+
+
+class Vector2D
+{
+
+public:
+	Vector2D(float X = 0, float Y = 0)
+	{
+		x = X;
+		y = Y;
+	};
+	~Vector2D() {} ;
+
+	float x, y;
+
+	Vector2D operator*(float scalar) const
+	{
+		return Vector2D(x * scalar, y * scalar);
+	}
+
+
+	Vector2D operator+(const Vector2D &vect) const
+	{
+		return Vector2D(x + vect.x, y + vect.y);
+	}
+
+	Vector2D operator-(const Vector2D &vect) const
+	{
+		return Vector2D(x - vect.x, y - vect.y);
+	}
+
+	void rotate(float angle)
+	{
+		float xt = (x * cosf(angle)) - (y * sinf(angle));
+		float yt = (y * cosf(angle)) + (x * sinf(angle));
+		x = xt;
+		y = yt;
+	}
+
+	float crossproduct(const Vector2D &vect2) const
+	{
+		return (this->x * vect2.y) - (this->y * vect2.x);
+	}
+
+	float magnitude()
+	{
+		return sqrtf(x * x +y * y);
+	}
+
+	void normalise()
+	{
+		float mag = sqrtf(x* x + y * y);
+		this->x = x / mag;
+		this->y = y / mag;
+	}
+
+	// return dot product
+	float dotproduct(const Vector2D &vect) const
+	{
+		return (x * vect.x) + (y * vect.y);
+	}
+
+	void setXY(float X, float Y){
+  x = X;
+  y = Y;
+	}
+};
+
+class Timer{
+   public:
+     Timer();
+     void start();
+     void stop();
+     void pause();
+     void unpause();
+     int get_ticks();
+     bool is_started();
+     bool is_paused();
+   private:
+     int startTicks;
+     int pausedTicks;
+     bool paused;
+     bool started;
+};
+
+Timer::Timer(){
+    startTicks = 0;
+    pausedTicks = 0;
+    paused = false;
+    started = false;
+}
+
+void Timer::start(){
+    started = true;
+    paused = false;
+    startTicks = SDL_GetTicks();
+}
+
+void Timer::stop(){
+    started = false;
+    paused = false;
+}
+
+void Timer::pause(){
+    if( ( started == true ) && ( paused == false ) ){
+    paused = true;
+    pausedTicks = SDL_GetTicks() - startTicks;
+        }
+}
+
+void Timer::unpause(){
+    if( paused == true ){
+    paused = false;
+    startTicks = SDL_GetTicks() - pausedTicks;
+    pausedTicks = 0;
+    }
+}
+
+int Timer::get_ticks(){
+    if( started == true ){
+        if( paused == true ){
+            return pausedTicks;}
+        else{
+            return SDL_GetTicks() - startTicks;
+        }
+    }
+    return 0;
+}
+
+bool Timer::is_started(){return started;}
+bool Timer::is_paused(){return paused;}
 
 
 
@@ -308,136 +437,131 @@ void close()
 	SDL_Quit();
 }
 
-class Vector2D
-{
 
-public:
-	Vector2D(float X = 0, float Y = 0)
-	{
-		x = X;
-		y = Y;
-	};
-	~Vector2D() {} ;
+//Scene textures should be initiated here
+// All pictures/media/TTF should be in loadMedia()
+// Don't forget to free() all textures at close()
 
-	float x, y;
-
-	Vector2D operator*(float scalar) const
-	{
-		return Vector2D(x * scalar, y * scalar);
-	}
+const int PLAYER_ANIMATION_FRAMES = 3;
+SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
 
 
-	Vector2D operator+(const Vector2D &vect) const
-	{
-		return Vector2D(x + vect.x, y + vect.y);
-	}
 
-	Vector2D operator-(const Vector2D &vect) const
-	{
-		return Vector2D(x - vect.x, y - vect.y);
-	}
+class Player{
+ public:
+ Player(float, float);
+ ~Player();
+ void update();
+ void render();
+ void move(SDL_Event &e);
+ void LandTileCollision();
 
-	void rotate(float angle)
-	{
-		float xt = (x * cosf(angle)) - (y * sinf(angle));
-		float yt = (y * cosf(angle)) + (x * sinf(angle));
-		x = xt;
-		y = yt;
-	}
+ private:
+  double posX, posY;
+  // Physics
+  double Gravity = 4.75;
+  double gCap = 6.6;
+  double gVel = 0;
+  Vector2D center;
+  float width = 0;
+  float height = 0;
+  // Rendering
+  SDL_Rect* currentClip = &gSpriteClips[1];
+  bool spriteFlag = false;
 
-	float crossproduct(const Vector2D &vect2) const
-	{
-		return (this->x * vect2.y) - (this->y * vect2.x);
-	}
-
-	float magnitude()
-	{
-		return sqrtf(x * x +y * y);
-	}
-
-	void normalise()
-	{
-		float mag = sqrtf(x* x + y * y);
-		this->x = x / mag;
-		this->y = y / mag;
-	}
-
-	// return dot product
-	float dotproduct(const Vector2D &vect) const
-	{
-		return (x * vect.x) + (y * vect.y);
-	}
-
-	void setXY(float X, float Y){
-  x = X;
-  y = Y;
-	}
 };
 
-class Timer{
-   public:
-     Timer();
-     void start();
-     void stop();
-     void pause();
-     void unpause();
-     int get_ticks();
-     bool is_started();
-     bool is_paused();
-   private:
-     int startTicks;
-     int pausedTicks;
-     bool paused;
-     bool started;
+
+class LandTile{
+  public:
+    LandTile(float x, float y);
+    ~LandTile();
+    void render();
+
+  private:
+    float posX, posY;
+    float width, height;
 };
 
-Timer::Timer(){
-    startTicks = 0;
-    pausedTicks = 0;
-    paused = false;
-    started = false;
+class LandTileGroup{
+ public:
+   LandTileGroup(std::vector<float> &x, std::vector<float> &y);
+   ~LandTileGroup();
+   void render();
+   std::vector<LandTile> container;
+};
+
+Player::Player(float x, float y){
+ posX = x;
+ posY = y;
+ center.x = posX+width;
+ center.y = posY+height;
 }
 
-void Timer::start(){
-    started = true;
-    paused = false;
-    startTicks = SDL_GetTicks();
+Player::~Player(){}
+
+void Player::update(){
+ posY = posY + gVel;
+ gVel = gVel + Gravity;
+ if (gVel > gCap){
+  gVel = gCap;
+ }
+};
+
+void Player::render(){
+//  if ()
+//   currentClip = &gSpriteClips[1];
+//  else if (angle < 0 && spriteFlag){
+//   currentClip = &gSpriteClips[0];
+//   spriteFlag = false;
+//  }
+//  else {
+//   currentClip = &gSpriteClips[2];
+//   spriteFlag = true;
+//  }
+
+ }
+
+void Player::move(SDL_Event &e){
+
+//Movement Code here
+
+
 }
 
-void Timer::stop(){
-    started = false;
-    paused = false;
+
+void Player::LandTileCollision(LandTileGroup &landtiles){
+ for (auto &x : landtiles.container){
+   // if collided
+
+   // else
+ }
+
 }
 
-void Timer::pause(){
-    if( ( started == true ) && ( paused == false ) ){
-    paused = true;
-    pausedTicks = SDL_GetTicks() - startTicks;
-        }
+LandTile::LandTile(float x, float y){
+  posX = x;
+  posY = y;
 }
 
-void Timer::unpause(){
-    if( paused == true ){
-    paused = false;
-    startTicks = SDL_GetTicks() - pausedTicks;
-    pausedTicks = 0;
-    }
+LandTile::~LandTile(){}
+
+void LandTile::render(){
+
 }
 
-int Timer::get_ticks(){
-    if( started == true ){
-        if( paused == true ){
-            return pausedTicks;}
-        else{
-            return SDL_GetTicks() - startTicks;
-        }
-    }
-    return 0;
+LandTileGroup::LandTileGroup(std::vector<float> &x, std::vector<float> &y){
+ if (x.empty() || y.empty()){
+   for (int i = 0; i <= SCREEN_WIDTH/2; i++){
+     container.emplace_back(50*i, 50);
+   }
+ }
+ else{
+   for(int i = 0; i <= x.size(); i++){
+     container.emplace_back(x[i], y[i]);
+   }
+ }
 }
-
-bool Timer::is_started(){return started;}
-bool Timer::is_paused(){return paused;}
-
 
 void levelOne(){
 
