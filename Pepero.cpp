@@ -486,11 +486,7 @@ class Player{
  void update();
  void render();
  void move(SDL_Event &e);
-<<<<<<< HEAD
- void LandTileCollision(LandTileGroup &landtiles);
-=======
  void LandTileCollision(LandTileGroup &landTiles);
->>>>>>> aaf9b7648d7bec7652ef59541352fc117a53cdf6
 
  private:
   double posX, posY;
@@ -504,16 +500,8 @@ class Player{
   // Rendering
   SDL_Rect* currentClip = &gSpriteClips[1];
   bool spriteFlag = false;
-<<<<<<< HEAD
-
-};
-
-
-
-=======
     int direction = 0;
 };
->>>>>>> aaf9b7648d7bec7652ef59541352fc117a53cdf6
 
 Player::Player(float x, float y){
  posX = x;
