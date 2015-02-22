@@ -490,6 +490,7 @@ class Player{
 
  private:
   double posX, posY;
+  double velX, velY;
   // Physics
   double Gravity = 4.75;
   double gCap = 6.6;
@@ -497,6 +498,8 @@ class Player{
   Vector2D center;
   float width = 0;
   float height = 0;
+  bool jump = false;
+
   // Rendering
   SDL_Rect* currentClip = &gSpriteClips[1];
   bool spriteFlag = false;
@@ -508,6 +511,8 @@ Player::Player(float x, float y){
  posY = y;
  center.x = posX+width;
  center.y = posY+height;
+ velX = 5;
+ velY = 2;
 }
 
 Player::~Player(){}
@@ -530,9 +535,31 @@ void Player::render(){
 void Player::move(SDL_Event &e){
 
 //Movement Code here
+  if (e.type == SDL_KEYDOWN)
+  {
+    /* Check the SDLKey values and move change the coords */
+    if (e.key.keysym.sym == SDLK_LEFT)
+    {
+      posX -= velX;
+    }
+    else if (e.key.keysym.sym == SDLK_RIGHT)
+    {
+      posX += velX;
+    }
 
+    if (e.key.keysym.sym == SDLK_UP)
+    {
+      if (jump == false)
+      {
 
+          posY -= 20;
+          jump = true;
+      }
+    }
+    jump = false;
+  }
 }
+
 
 
 void Player::LandTileCollision(LandTileGroup &landTiles){
@@ -568,8 +595,9 @@ LandTileGroup::LandTileGroup(std::vector<float> &x, std::vector<float> &y){
  }
 }
 
-void levelOne(Player &player){
-
+void levelOne(Player &player, SDL_Event &e){
+        player.update();
+        player.move(e);
  				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
@@ -629,7 +657,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelOne(player);
+        levelOne(player, e);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
