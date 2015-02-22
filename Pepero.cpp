@@ -357,6 +357,7 @@ int LTexture::getHeight()
 
 LTexture playerSprite;
 LTexture landSprite;
+LTexture bg1Sprite;
 
 const int PLAYER_ANIMATION_FRAMES = 6;
 SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
@@ -448,6 +449,11 @@ bool loadMedia()
 	 	printf( "Failed to load land texture!\n" );
 	 	success = false;
 	 }
+	 if( !bg1Sprite.loadFromFile( "Assets/bg1.png" ) )
+	 {
+	 	printf( "Failed to load background 1 texture!\n" );
+	 	success = false;
+	 }
     return success;
 }
 
@@ -456,6 +462,7 @@ void close()
 	//Free loaded images
 	landSprite.free();
 	playerSprite.free();
+	bg1Sprite.free();
 
 	//Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -628,15 +635,30 @@ void LandTileGroup::render(){
 LandTileGroup::~LandTileGroup(){};
 
 void levelOne(Player &player, SDL_Event &e){
+    static int scrollingOffset = 0;
     static LandTileGroup land(0,0);
     static LandTileGroup randomLand(SCREEN_WIDTH, rand() % SCREEN_HEIGHT);
     //logic
     randomLand.move();
-    player.update();
+    //player.update();
     player.move(e);
+
+
+    scrollingOffset-= 2;
+				if( scrollingOffset < -bg1Sprite.getWidth() )
+				{
+					scrollingOffset = 0;
+				}
+
+
  				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
+
+				bg1Sprite.render( scrollingOffset, 0 );
+				bg1Sprite.render( scrollingOffset + bg1Sprite.getWidth(), 0 );
+
+
     land.render();
     randomLand.render();
     player.render();
