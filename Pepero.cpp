@@ -6,8 +6,8 @@
 #include <vector>
 
 //Screen dimension constants
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
+const int SCREEN_WIDTH = 900;
+const int SCREEN_HEIGHT = 300;
 
 const int FPS = 30;
 //The window we'll be rendering to
@@ -61,8 +61,6 @@ class LTexture
 		int mWidth;
 		int mHeight;
 };
-
-
 
 class Vector2D
 {
@@ -192,9 +190,8 @@ int Timer::get_ticks(){
 }
 
 bool Timer::is_started(){return started;}
+
 bool Timer::is_paused(){return paused;}
-
-
 
 //Starts up SDL and creates window
 bool init();
@@ -353,6 +350,16 @@ int LTexture::getHeight()
 	return mHeight;
 }
 
+//Scene textures should be initiated here
+// All pictures/media/TTF should be in loadMedia()
+// Don't forget to free() all textures at close()
+
+LTexture playerSprite;
+
+const int PLAYER_ANIMATION_FRAMES = 6;
+SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
+
+
 bool init()
 {
 	//Initialization flag
@@ -411,20 +418,36 @@ bool loadMedia()
 {
 	//Loading success flag
 	bool success = true;
-	// Sample Load
-	// if( !gBGTexture.loadFromFile( "bg.png" ) )
-	// {
-	// 	printf( "Failed to load background texture!\n" );
-	// 	success = false;
-	// }
 
-	return success;
+	 if( !playerSprite.loadFromFile( "Assets/player.png" ) )
+	 {
+	 	printf( "Failed to load texture!\n" );
+	 	success = false;
+	 }
+	 else{
+        for (int i = 0; i < 3; i++)
+        {
+            gSpriteClips[i].x = i*32;
+            gSpriteClips[i].y = 0;
+            gSpriteClips[i].w = 32;
+            gSpriteClips[i].h = 32;
+        }
+        for (int i = 3; i < 6; i++)
+        {
+            gSpriteClips[i].x = (i-3)*32;
+            gSpriteClips[i].y = 33;
+            gSpriteClips[i].w = 32;
+            gSpriteClips[i].h = 32;
+        }
+	 }
+
+    return success;
 }
 
 void close()
 {
 	//Free loaded images
-	// Sample : gBGTexture.free();
+	playerSprite.free();
 
 	//Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -436,14 +459,6 @@ void close()
 	IMG_Quit();
 	SDL_Quit();
 }
-
-
-//Scene textures should be initiated here
-// All pictures/media/TTF should be in loadMedia()
-// Don't forget to free() all textures at close()
-
-const int PLAYER_ANIMATION_FRAMES = 3;
-SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
 
 class LandTile{
   public:
@@ -471,7 +486,11 @@ class Player{
  void update();
  void render();
  void move(SDL_Event &e);
+<<<<<<< HEAD
  void LandTileCollision(LandTileGroup &landtiles);
+=======
+ void LandTileCollision(LandTileGroup &landTiles);
+>>>>>>> aaf9b7648d7bec7652ef59541352fc117a53cdf6
 
  private:
   double posX, posY;
@@ -485,11 +504,16 @@ class Player{
   // Rendering
   SDL_Rect* currentClip = &gSpriteClips[1];
   bool spriteFlag = false;
+<<<<<<< HEAD
 
 };
 
 
 
+=======
+    int direction = 0;
+};
+>>>>>>> aaf9b7648d7bec7652ef59541352fc117a53cdf6
 
 Player::Player(float x, float y){
  posX = x;
@@ -509,17 +533,10 @@ void Player::update(){
 };
 
 void Player::render(){
-//  if ()
-//   currentClip = &gSpriteClips[1];
-//  else if (angle < 0 && spriteFlag){
-//   currentClip = &gSpriteClips[0];
-//   spriteFlag = false;
-//  }
-//  else {
-//   currentClip = &gSpriteClips[2];
-//   spriteFlag = true;
-//  }
-
+  if (direction == 0){
+   currentClip = &gSpriteClips[2];
+   }
+   playerSprite.render(posX,posY,currentClip);
  }
 
 void Player::move(SDL_Event &e){
@@ -530,8 +547,8 @@ void Player::move(SDL_Event &e){
 }
 
 
-void Player::LandTileCollision(LandTileGroup &landtiles){
- for (auto &x : landtiles.container){
+void Player::LandTileCollision(LandTileGroup &landTiles){
+ for (auto &x : landTiles.container){
    // if collided
 
    // else
@@ -563,11 +580,13 @@ LandTileGroup::LandTileGroup(std::vector<float> &x, std::vector<float> &y){
  }
 }
 
-void levelOne(){
+void levelOne(Player &player){
 
  				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
+
+        player.render();
 
 				//Update screen
 				SDL_RenderPresent( gRenderer );
@@ -606,12 +625,12 @@ int main( int argc, char* args[] )
 			Timer fps;
 
 			// Game Object initialization
-
+      Player player(100,100);
 
 			//While application is running
 			while( !quit )
 			{
-    fps.start();
+        fps.start();
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) != 0 )
 				{
@@ -622,8 +641,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-
-    levelOne();
+        levelOne(player);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
