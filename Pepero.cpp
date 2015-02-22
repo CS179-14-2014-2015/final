@@ -3,6 +3,7 @@
 #include <SDL2/SDL_image.h>
 #include <stdio.h>
 #include <string>
+#include <vector>
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 800;
@@ -453,6 +454,7 @@ class Player{
  void update();
  void render();
  void move(SDL_Event &e);
+ void LandTileCollision();
 
  private:
   double posX, posY;
@@ -474,10 +476,19 @@ class LandTile{
   public:
     LandTile(float x, float y);
     ~LandTile();
+    void render();
 
   private:
     float posX, posY;
     float width, height;
+};
+
+class LandTileGroup{
+ public:
+   LandTileGroup(std::vector<float> &x, std::vector<float> &y);
+   ~LandTileGroup();
+   void render();
+   std::vector<LandTile> container;
 };
 
 Player::Player(float x, float y){
@@ -525,6 +536,23 @@ LandTile::LandTile(float x, float y){
 }
 
 LandTile::~LandTile(){}
+
+void LandTile::render(){
+
+}
+
+LandTileGroup::LandTileGroup(std::vector<float> &x, std::vector<float> &y){
+ if (x.empty() || y.empty()){
+   for (int i = 0; i <= SCREEN_WIDTH/2; i++){
+     container.emplace_back(50*i, 50);
+   }
+ }
+ else{
+   for(int i = 0; i <= x.size(); i++){
+     container.emplace_back(x[i], y[i]);
+   }
+ }
+}
 
 void levelOne(){
 
