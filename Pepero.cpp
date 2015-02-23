@@ -759,8 +759,8 @@ void Ball::render()
 
 void Ball::move()
 {
-  posX += rand()%8;
-  posY += rand()%8;
+  posX += rand()%8*sin(angle);
+  posY += rand()%8*sin(angle);
 }
 
 Ball::~Ball()
