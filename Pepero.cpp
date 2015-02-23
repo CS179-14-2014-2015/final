@@ -10,7 +10,7 @@
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 300;
 
-const int FPS = 30;
+const int FPS = 20;
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 //The window renderer
@@ -358,10 +358,14 @@ int LTexture::getHeight()
 LTexture playerSprite;
 LTexture landSprite;
 LTexture bg1Sprite;
+LTexture bg2Sprite;
+LTexture ballSprite;
 
 const int PLAYER_ANIMATION_FRAMES = 6;
 SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
 
+const int BALL_ANIMATION_FRAMES = 7;
+SDL_Rect ballSpriteClip[BALL_ANIMATION_FRAMES];
 
 bool init()
 {
@@ -428,7 +432,8 @@ bool loadMedia()
 	 	success = false;
 	 }
 
-	 else{
+	 else
+	 {
         for (int i = 0; i < 3; i++)
         {
             gSpriteClips[i].x = i*32;
@@ -443,17 +448,42 @@ bool loadMedia()
             gSpriteClips[i].w = 32;
             gSpriteClips[i].h = 32;
         }
-	 }
+    }
+
   if( !landSprite.loadFromFile( "Assets/platform.png" ) )
 	 {
 	 	printf( "Failed to load land texture!\n" );
 	 	success = false;
 	 }
+
 	 if( !bg1Sprite.loadFromFile( "Assets/bg1.png" ) )
 	 {
 	 	printf( "Failed to load background 1 texture!\n" );
 	 	success = false;
 	 }
+
+	 if(!bg2Sprite.loadFromFile("Assets/bg2.png"))
+	 {
+    printf("Failed to load background 2 texture!\n");
+    success = false;
+	 }
+
+	 if( !ballSprite.loadFromFile( "Assets/balls.png" ) )
+	 {
+	 	printf( "Failed to load ball texture!\n" );
+	 	success = false;
+	 }
+
+	 else
+	 {
+        for (int i = 0; i < 7; i++)
+        {
+            ballSpriteClip[i].x = 0;
+            ballSpriteClip[i].y = (i*32);
+            ballSpriteClip[i].w = 32;
+            ballSpriteClip[i].h = 32;
+        }
+    }
     return success;
 }
 
@@ -463,6 +493,7 @@ void close()
 	landSprite.free();
 	playerSprite.free();
 	bg1Sprite.free();
+  bg2Sprite.free();
 
 	//Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -496,30 +527,35 @@ class LandTileGroup{
 };
 
 class Player{
- public:
- Player(float, float);
- ~Player();
- void update();
- void render();
- void move(SDL_Event &e);
- void LandTileCollision(LandTileGroup &landTiles);
+  public:
+    Player(float, float);
+    ~Player();
+    void update();
+    void render();
+    void move(SDL_Event &e);
+    void LandTileCollision(LandTileGroup &landTiles);
+    void jump();
 
- private:
-  double posX, posY;
-  double velX, velY;
-  // Physics
-  double Gravity = 4.75;
-  double gCap = 6.6;
-  double gVel = 0;
-  Vector2D center;
-  float width = 0;
-  float height = 0;
-  bool jump = false;
+  private:
+    double posX, posY;
+    double velX, velY;
 
-  // Rendering
-  SDL_Rect* currentClip = &gSpriteClips[1];
-  bool spriteFlag = false;
-    int direction = 0;
+    // Physics
+    double Gravity = 4.75;
+    double gCap = 6.6;
+    double gVel = 0;
+    Vector2D center;
+    float width = 0;
+    float height = 0;
+    float velYCap = 50;
+
+    // Rendering
+    SDL_Rect* currentClip = &gSpriteClips[2];
+    int direction = 1;
+    bool jumping = false;
+    bool run = false;
+    bool running = false;
+    bool colliding = true;
 };
 
 Player::Player(float x, float y){
@@ -527,60 +563,124 @@ Player::Player(float x, float y){
  posY = y;
  center.x = posX+width;
  center.y = posY+height;
- velX = 5;
+ velX = 10;
  velY = 2;
 }
 
 Player::~Player(){}
 
 void Player::update(){
- posY = posY + gVel;
- gVel = gVel + Gravity;
- if (gVel > gCap){
-  gVel = gCap;
- }
+  if (jumping == true)
+    {
+      gVel = 0;
+      posY -= velY;
+    }
+  else
+  {
+    posY = posY + gVel;
+    gVel = gVel + Gravity;
+    if (gVel > gCap){
+      gVel = gCap;
+    }
+  }
 };
 
 void Player::render(){
-  if (direction == 0){
-   currentClip = &gSpriteClips[2];
-   }
-   playerSprite.render(posX,posY,currentClip);
- }
+  if (direction == 0)
+  {
+    if (run == false)
+    {
+      currentClip = &gSpriteClips[2];
+    }
+    else if (run == true)
+    {
+      if (running == false)
+      {
+        currentClip = &gSpriteClips[0];
+        running = true;
+      }
+      else
+      {
+        currentClip = &gSpriteClips[1];
+        running = false;
+      }
+    }
+  }
+  else if (direction == 1)
+  {
+    if (run == false)
+    {
+      currentClip = &gSpriteClips[3];
+    }
+    else if (run == true)
+    {
+      if (running == false)
+      {
+        currentClip = &gSpriteClips[4];
+        running = true;
+      }
+      else
+      {
+        currentClip = &gSpriteClips[5];
+        running = false;
+      }
+    }
+  }
+  playerSprite.render(posX,posY,currentClip);
+}
 
 void Player::move(SDL_Event &e){
-
+  velY = 0;
 //Movement Code here
   if (e.type == SDL_KEYDOWN)
   {
     /* Check the SDLKey values and move change the coords */
     if (e.key.keysym.sym == SDLK_LEFT)
     {
+      direction = 0;
+      run = true;
       posX -= velX;
     }
     else if (e.key.keysym.sym == SDLK_RIGHT)
     {
+      direction = 1;
+      run = true;
       posX += velX;
     }
 
     if (e.key.keysym.sym == SDLK_UP)
     {
-      if (jump == false)
+      if (jumping == false)
       {
-
-          posY -= 20;
-          jump = true;
+        jump();
       }
     }
-    jump = false;
+  }
+  else if (e.type == SDL_KEYUP)
+  {
+    if (e.key.keysym.sym == SDLK_LEFT)
+    {
+      run = false;
+    }
+    else if (e.key.keysym.sym == SDLK_RIGHT)
+    {
+      run = false;
+    }
   }
 }
 
-
+void Player::jump()
+{
+  if (velY < velYCap)
+  {
+    velY += 15;
+  }
+  jumping = true;
+}
 
 void Player::LandTileCollision(LandTileGroup &landTiles){
  for (auto &x : landTiles.container){
-   // if collided
+   //if collided
 
    // else
  }
@@ -611,7 +711,6 @@ LandTileGroup::LandTileGroup(float x , float y ){
  }
 }
 
-
 void LandTileGroup::move(){
  for (auto &x : container){
    x.posX -= 10;
@@ -634,13 +733,48 @@ void LandTileGroup::render(){
 
 LandTileGroup::~LandTileGroup(){};
 
+class Ball{
+  public:
+    Ball();
+    ~Ball();
+    void render();
+    void move();
+    float posX;
+    float posY;
+    float width, height;
+};
+
+Ball::Ball()
+{
+  width = ballSprite.getWidth();
+  height = ballSprite.getHeight();
+  posX = (SCREEN_WIDTH/2) - (width/2);
+  posY = (SCREEN_HEIGHT/3);
+}
+
+void Ball::render()
+{
+  ballSprite.render(posX, posY, &ballSpriteClip[5]);
+}
+
+void Ball::move()
+{
+  posX += rand()%8;
+  posY += rand()%8;
+}
+
+Ball::~Ball()
+{
+
+}
+
 void levelOne(Player &player, SDL_Event &e){
     static int scrollingOffset = 0;
     static LandTileGroup land(0,0);
     static LandTileGroup randomLand(SCREEN_WIDTH, rand() % SCREEN_HEIGHT);
     //logic
     randomLand.move();
-    //player.update();
+    player.update();
     player.move(e);
 
 
@@ -667,8 +801,20 @@ void levelOne(Player &player, SDL_Event &e){
 				SDL_RenderPresent( gRenderer );
 }
 
-void levelTwo(){
+void levelTwo(Player &player, SDL_Event &e){
+  static LandTileGroup a(100,100);
+  static Ball *b = new Ball();
+  player.move(e);
 
+  SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+  SDL_RenderClear( gRenderer );
+
+  bg2Sprite.render(0,0);
+  a.render();
+  b->render();
+  player.render();
+
+  SDL_RenderPresent(gRenderer);
 }
 
 void levelThree(){
@@ -700,7 +846,7 @@ int main( int argc, char* args[] )
 			Timer fps;
 
 			// Game Object initialization
-   Player player(100,100);
+   Player player(100,SCREEN_HEIGHT-50);
 			//While application is running
 			while( !quit )
 			{
@@ -715,7 +861,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelOne(player, e);
+        levelTwo(player, e);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
