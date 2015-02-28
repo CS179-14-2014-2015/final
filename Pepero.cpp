@@ -536,26 +536,22 @@ class Player{
     void jump();
 
   private:
-    Vector2D position,velocity;
+    Vector2D position,velocity,dimension;
 
     // Physics
     double Gravity = 4.75;
     double gCap = 6.6;
     double gVel = 0;
-    float width = 0;
-    float height = 0;
     float velYCap = 50;
-
 
     // AABB
     SDL_Rect collider, result;
 
-    bool hasCollidedX = false;
-    bool hasCollidedY = false;
-
     // Rendering
     SDL_Rect* currentClip = &gSpriteClips[2];
     int direction = 1;
+
+    // control flags
     bool jumping = false;
     bool run = false;
     bool running = false;
@@ -565,26 +561,24 @@ Player::Player(double x, double y){
  position.x = x;
  position.y = y;
  velocity.x = 10;
- velocity.y = 2;
+ velocity.y = 50;
+ dimension.x = playerSprite.getWidth()/3;
+ dimension.y = playerSprite.getHeight()/2;
+
 }
 
 Player::~Player(){}
 
 void Player::update(){
-  if (jumping == true)
-    {
-      gVel = 0;
-      position.y -= velocity.y;
-    }
-  else
-  {
     position.y = position.y + gVel;
     gVel = gVel + Gravity;
     if (gVel > gCap){
       gVel = gCap;
     }
-  }
-};
+    if (position.y > SCREEN_HEIGHT - 50){
+      position.y = SCREEN_HEIGHT - 50;
+    }
+}
 
 void Player::render(){
   if (direction == 0)
@@ -649,7 +643,7 @@ void Player::move(SDL_Event &e){
         position.x -= velocity.x;
       }
     }
-    else if (e.key.keysym.sym == SDLK_RIGHT)
+    if (e.key.keysym.sym == SDLK_RIGHT)
     {
       direction = 1;
       run = true;
@@ -663,13 +657,10 @@ void Player::move(SDL_Event &e){
       }
     }
 
-    if (e.key.keysym.sym == SDLK_UP)
-    {
-      if (jumping == false)
-      {
-        jump();
-      }
-    }
+   if (e.key.keysym.sym == SDLK_UP)
+   {
+      position.y -= velocity.y;
+   }
   }
   else if (e.type == SDL_KEYUP)
   {
@@ -684,14 +675,6 @@ void Player::move(SDL_Event &e){
   }
 }
 
-void Player::jump()
-{
-  if (velocity.y < velYCap)
-  {
-    velocity.y += 15;
-  }
-  jumping = true;
-}
 //
 //void Player::LandTileCollision(LandTileGroup &landTiles){
 //  for(LandTile &tile : landTiles.container){
@@ -804,7 +787,7 @@ void levelOne(Player &player, SDL_Event &e){
     static LandTileGroup randomLand(SCREEN_WIDTH, SCREEN_HEIGHT-60);
     //logic
     randomLand.move();
-    //player.update();
+    player.update();
     player.move(e);
 
     scrollingOffset-= 2;
