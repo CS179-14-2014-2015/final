@@ -533,7 +533,6 @@ class Player{
     void render();
     void move(SDL_Event &e);
     //void LandTileCollision(LandTileGroup &landTiles);
-    void jump();
 
   private:
     Vector2D position,velocity,dimension;
@@ -543,6 +542,7 @@ class Player{
     double gCap = 6.6;
     double gVel = 0;
     float velYCap = 50;
+    double jumpHeight = 100;
 
     // AABB
     SDL_Rect collider, result;
@@ -552,9 +552,9 @@ class Player{
     int direction = 1;
 
     // control flags
-    bool jumping = false;
     bool run = false;
     bool running = false;
+    bool jumped = true;
 };
 
 Player::Player(double x, double y){
@@ -625,7 +625,7 @@ void Player::render(){
 }
 
 void Player::move(SDL_Event &e){
-  velocity.y = 0;
+
 //Movement Code here
   if (e.type == SDL_KEYDOWN)
   {
@@ -655,11 +655,12 @@ void Player::move(SDL_Event &e){
       {
         position.x += velocity.x;
       }
-    }
+   }
 
-   if (e.key.keysym.sym == SDLK_UP)
+   if (e.key.keysym.sym == SDLK_UP && jumped)
    {
-      position.y -= velocity.y;
+       position.y -= jumpHeight;
+       jumped = false;
    }
   }
   else if (e.type == SDL_KEYUP)
@@ -668,10 +669,12 @@ void Player::move(SDL_Event &e){
     {
       run = false;
     }
-    else if (e.key.keysym.sym == SDLK_RIGHT)
+    if (e.key.keysym.sym == SDLK_RIGHT)
     {
       run = false;
     }
+    if (e.key.keysym.sym == SDLK_UP)
+      jumped = true;
   }
 }
 
