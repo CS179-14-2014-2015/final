@@ -514,6 +514,7 @@ class LandTile{
     float posX;
     float posY;
     float width, height;
+    SDL_Rect collider;
 };
 
 class LandTileGroup{
@@ -523,7 +524,6 @@ class LandTileGroup{
    void move();
    void render();
    std::vector<LandTile> container;
-
 };
 
 class Player{
@@ -548,6 +548,7 @@ class Player{
     float width = 0;
     float height = 0;
     float velYCap = 50;
+    SDL_Rect collider;
 
     // Rendering
     SDL_Rect* currentClip = &gSpriteClips[2];
@@ -639,13 +640,27 @@ void Player::move(SDL_Event &e){
     {
       direction = 0;
       run = true;
-      posX -= velX;
+      if (posX == 0)
+      {
+        posX = 0;
+      }
+      else
+      {
+        posX -= velX;
+      }
     }
     else if (e.key.keysym.sym == SDLK_RIGHT)
     {
       direction = 1;
       run = true;
-      posX += velX;
+      if (posX == 870)
+      {
+        posX = 870;
+      }
+      else
+      {
+        posX += velX;
+      }
     }
 
     if (e.key.keysym.sym == SDLK_UP)
@@ -690,6 +705,10 @@ void Player::LandTileCollision(LandTileGroup &landTiles){
 LandTile::LandTile(float x, float y){
   posX = x;
   posY = y;
+  collider.x = posX;
+  collider.y = posY;
+  collider.w = landSprite.getWidth();
+  collider.h = landSprite.getHeight();
 }
 
 LandTile::~LandTile(){}
@@ -759,8 +778,8 @@ void Ball::render()
 
 void Ball::move()
 {
-  posX += rand()%8*sin(angle);
-  posY += rand()%8*sin(angle);
+  //posX += rand()%8*sin(angle);
+  //posY += rand()%8*sin(angle);
 }
 
 Ball::~Ball()
