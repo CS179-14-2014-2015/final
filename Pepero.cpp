@@ -67,16 +67,16 @@ class Vector2D
 {
 
 public:
-	Vector2D(float X = 0, float Y = 0)
+	Vector2D(double X = 0, double Y = 0)
 	{
 		x = X;
 		y = Y;
 	};
 	~Vector2D() {} ;
 
-	float x, y;
+	double x, y;
 
-	Vector2D operator*(float scalar) const
+	Vector2D operator*(double scalar) const
 	{
 		return Vector2D(x * scalar, y * scalar);
 	}
@@ -92,7 +92,7 @@ public:
 		return Vector2D(x - vect.x, y - vect.y);
 	}
 
-	void rotate(float angle)
+	void rotate(double angle)
 	{
 		float xt = (x * cosf(angle)) - (y * sinf(angle));
 		float yt = (y * cosf(angle)) + (x * sinf(angle));
@@ -112,7 +112,7 @@ public:
 
 	void normalise()
 	{
-		float mag = sqrtf(x* x + y * y);
+		double mag = sqrtf(x* x + y * y);
 		this->x = x / mag;
 		this->y = y / mag;
 	}
@@ -511,10 +511,9 @@ class LandTile{
     LandTile(float x, float y);
     ~LandTile();
     void render();
-    float posX;
-    float posY;
-    float width, height;
-    SDL_Rect collider;
+    double posX;
+    double posY;
+    double width, height;
 };
 
 class LandTileGroup{
@@ -528,27 +527,31 @@ class LandTileGroup{
 
 class Player{
   public:
-    Player(float, float);
+    Player(double, double);
     ~Player();
     void update();
     void render();
     void move(SDL_Event &e);
-    void LandTileCollision(LandTileGroup &landTiles);
+    //void LandTileCollision(LandTileGroup &landTiles);
     void jump();
 
   private:
-    double posX, posY;
-    double velX, velY;
+    Vector2D position,velocity;
 
     // Physics
     double Gravity = 4.75;
     double gCap = 6.6;
     double gVel = 0;
-    Vector2D center;
     float width = 0;
     float height = 0;
     float velYCap = 50;
-    SDL_Rect collider;
+
+
+    // AABB
+    SDL_Rect collider, result;
+
+    bool hasCollidedX = false;
+    bool hasCollidedY = false;
 
     // Rendering
     SDL_Rect* currentClip = &gSpriteClips[2];
@@ -556,16 +559,13 @@ class Player{
     bool jumping = false;
     bool run = false;
     bool running = false;
-    bool colliding = true;
 };
 
-Player::Player(float x, float y){
- posX = x;
- posY = y;
- center.x = posX+width;
- center.y = posY+height;
- velX = 10;
- velY = 2;
+Player::Player(double x, double y){
+ position.x = x;
+ position.y = y;
+ velocity.x = 10;
+ velocity.y = 2;
 }
 
 Player::~Player(){}
@@ -574,11 +574,11 @@ void Player::update(){
   if (jumping == true)
     {
       gVel = 0;
-      posY -= velY;
+      position.y -= velocity.y;
     }
   else
   {
-    posY = posY + gVel;
+    position.y = position.y + gVel;
     gVel = gVel + Gravity;
     if (gVel > gCap){
       gVel = gCap;
@@ -627,11 +627,11 @@ void Player::render(){
       }
     }
   }
-  playerSprite.render(posX,posY,currentClip);
+  playerSprite.render(position.x,position.y,currentClip);
 }
 
 void Player::move(SDL_Event &e){
-  velY = 0;
+  velocity.y = 0;
 //Movement Code here
   if (e.type == SDL_KEYDOWN)
   {
@@ -640,26 +640,26 @@ void Player::move(SDL_Event &e){
     {
       direction = 0;
       run = true;
-      if (posX == 0)
+      if (position.x == 0)
       {
-        posX = 0;
+        position.x = 0;
       }
       else
       {
-        posX -= velX;
+        position.x -= velocity.x;
       }
     }
     else if (e.key.keysym.sym == SDLK_RIGHT)
     {
       direction = 1;
       run = true;
-      if (posX == 870)
+      if (position.x == 870)
       {
-        posX = 870;
+        position.x = 870;
       }
       else
       {
-        posX += velX;
+        position.x += velocity.x;
       }
     }
 
@@ -686,29 +686,40 @@ void Player::move(SDL_Event &e){
 
 void Player::jump()
 {
-  if (velY < velYCap)
+  if (velocity.y < velYCap)
   {
-    velY += 15;
+    velocity.y += 15;
   }
   jumping = true;
 }
-
-void Player::LandTileCollision(LandTileGroup &landTiles){
- for (auto &x : landTiles.container){
-   //if collided
-
-   // else
- }
-
-}
+//
+//void Player::LandTileCollision(LandTileGroup &landTiles){
+//  for(LandTile &tile : landTiles.container){
+//   if(abs(posX - tile.posX) < (width + tile.width))
+//      {
+//         if(abs(posY - tile.posY) < (height + tile.height))
+//         {
+//             hasCollidedY = true;
+//         }
+//      }
+//    else{
+//      hasCollidedX = false;
+//      hasCollidedY = false;
+//    }
+//    if (hasCollidedX){
+//      //posX -= tile.width;
+//      }
+//    if (hasCollidedY){
+//       //posY = tile.posY - tile.height;
+//     }
+//  }
+//}
 
 LandTile::LandTile(float x, float y){
   posX = x;
   posY = y;
-  collider.x = posX;
-  collider.y = posY;
-  collider.w = landSprite.getWidth();
-  collider.h = landSprite.getHeight();
+  width = landSprite.getWidth();
+  height = landSprite.getHeight();
 }
 
 LandTile::~LandTile(){}
@@ -790,12 +801,11 @@ Ball::~Ball()
 void levelOne(Player &player, SDL_Event &e){
     static int scrollingOffset = 0;
     static LandTileGroup land(0,0);
-    static LandTileGroup randomLand(SCREEN_WIDTH, rand() % SCREEN_HEIGHT);
+    static LandTileGroup randomLand(SCREEN_WIDTH, SCREEN_HEIGHT-60);
     //logic
     randomLand.move();
-    player.update();
+    //player.update();
     player.move(e);
-
 
     scrollingOffset-= 2;
 				if( scrollingOffset < -bg1Sprite.getWidth() )
@@ -880,7 +890,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelTwo(player, e);
+        levelOne(player, e);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
