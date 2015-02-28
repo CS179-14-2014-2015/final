@@ -508,12 +508,10 @@ void close()
 
 class LandTile{
   public:
-    LandTile(float x, float y);
+    LandTile(double x, double y);
     ~LandTile();
     void render();
-    double posX;
-    double posY;
-    double width, height;
+    Vector2D position, dimension;
 };
 
 class LandTileGroup{
@@ -701,17 +699,17 @@ void Player::move(SDL_Event &e){
 //  }
 //}
 
-LandTile::LandTile(float x, float y){
-  posX = x;
-  posY = y;
-  width = landSprite.getWidth();
-  height = landSprite.getHeight();
+LandTile::LandTile(double x, double y){
+  position.x = x;
+  position.y = y;
+  dimension.x = landSprite.getWidth();
+  dimension.y = landSprite.getHeight();
 }
 
 LandTile::~LandTile(){}
 
 void LandTile::render(){
-  landSprite.render(posX,posY);
+  landSprite.render(position.x,position.y);
 }
 
 LandTileGroup::LandTileGroup(float x , float y ){
@@ -728,22 +726,22 @@ LandTileGroup::LandTileGroup(float x , float y ){
 }
 
 void LandTileGroup::move(){
- for (auto &x : container){
-   x.posX -= 10;
+ for (auto &tile : container){
+   tile.position.x -= 10;
  }
 
- if (container[0].posX < 0){
+ if (container[0].position.x < 0){
    int y = rand() % (SCREEN_HEIGHT - 100) + 50;
    for (int i = 0; i <= rand() % 5 + 2 ; i++){
-     container[i].posX = SCREEN_WIDTH + i*landSprite.getWidth();
-     container[i].posY = y;
+     container[i].position.x = SCREEN_WIDTH + i*landSprite.getWidth();
+     container[i].position.y = y;
      }
    }
 }
 
 void LandTileGroup::render(){
- for (auto &x : container){
-   x.render();
+ for (auto &tile : container){
+   tile.render();
  }
 }
 
@@ -755,22 +753,20 @@ class Ball{
     ~Ball();
     void render();
     void move();
-    float posX;
-    float posY;
-    float width, height;
+    Vector2D position, dimension;
 };
 
 Ball::Ball()
 {
-  width = ballSprite.getWidth();
-  height = ballSprite.getHeight();
-  posX = (SCREEN_WIDTH/2) - (width/2);
-  posY = (SCREEN_HEIGHT/3);
+  dimension.x = ballSprite.getWidth();
+  dimension.y = ballSprite.getHeight()/7;
+  position.x = (SCREEN_WIDTH/2) - (dimension.x/2);
+  position.y = (SCREEN_HEIGHT/3);
 }
 
 void Ball::render()
 {
-  ballSprite.render(posX, posY, &ballSpriteClip[5]);
+  ballSprite.render(position.x, position.y, &ballSpriteClip[5]);
 }
 
 void Ball::move()
@@ -876,7 +872,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelOne(player, e);
+        levelTwo(player, e);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
