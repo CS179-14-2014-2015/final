@@ -530,7 +530,7 @@ class Player{
     void update();
     void render();
     void move(SDL_Event &e);
-    //void LandTileCollision(LandTileGroup &landTiles);
+    void LandTileCollision(LandTileGroup &landTiles);
 
   private:
     Vector2D position,velocity,dimension;
@@ -544,6 +544,7 @@ class Player{
 
     // AABB
     SDL_Rect collider, result;
+    bool collided;
 
     // Rendering
     SDL_Rect* currentClip = &gSpriteClips[2];
@@ -676,28 +677,47 @@ void Player::move(SDL_Event &e){
   }
 }
 
-//
-//void Player::LandTileCollision(LandTileGroup &landTiles){
-//  for(LandTile &tile : landTiles.container){
-//   if(abs(posX - tile.posX) < (width + tile.width))
-//      {
-//         if(abs(posY - tile.posY) < (height + tile.height))
-//         {
-//             hasCollidedY = true;
-//         }
-//      }
-//    else{
-//      hasCollidedX = false;
-//      hasCollidedY = false;
-//    }
-//    if (hasCollidedX){
-//      //posX -= tile.width;
-//      }
-//    if (hasCollidedY){
-//       //posY = tile.posY - tile.height;
+
+void Player::LandTileCollision(LandTileGroup &landTiles){
+  // calculate player collider
+  SDL_Rect tileCollider;
+
+  int counter = 0;
+  int containerSize = landTiles.container.size() - 1;
+
+  collider.x = position.x;
+  collider.y = position.y;
+  collider.w = dimension.x;
+  collider.h = dimension.y;
+
+  for(LandTile &tile : landTiles.container){
+   tileCollider.x = tile.position.x;
+   tileCollider.y = tile.position.y;
+   tileCollider.w = tile.dimension.x;
+   tileCollider.h = tile.dimension.y;
+
+   collided = SDL_IntersectRect(&collider, &tileCollider, &result);
+
+   if (collided){
+     if (result.w > 0 && (counter == 0 || counter == containerSize)){
+       if (position.x < tile.position.x)
+           position.x -= (result.w);
+       else if (position.x > tile.position.x)
+           position.x += result.w ;
+       }
+     if (result.h > 0){
+        if (position.y < tile.position.y)
+           position.y -= result.h ;
+        else if (position.y > tile.position.y)
+           position.y += result.h ;
+       }
+     }
+//     if (result.h > 0 && position.y > tile.position.y){
+//       position.x -= result.h;
 //     }
-//  }
-//}
+
+  }
+}
 
 LandTile::LandTile(double x, double y){
   position.x = x;
@@ -719,7 +739,7 @@ LandTileGroup::LandTileGroup(float x , float y ){
    }
  }
  else{
-   for(int i = 0; i <= rand() % 5 + 2 ; i++){
+   for(int i = 0; i <= rand() % 3 + 2 ; i++){
      container.emplace_back(x + i*landSprite.getWidth(), y);
    }
  }
@@ -783,11 +803,13 @@ Ball::~Ball()
 void levelOne(Player &player, SDL_Event &e){
     static int scrollingOffset = 0;
     static LandTileGroup land(0,0);
-    static LandTileGroup randomLand(SCREEN_WIDTH, SCREEN_HEIGHT-60);
+    static LandTileGroup randomLand(200, SCREEN_HEIGHT-60);
     //logic
-    randomLand.move();
+    //randomLand.move();
     player.update();
     player.move(e);
+
+    player.LandTileCollision(randomLand);
 
     scrollingOffset-= 2;
 				if( scrollingOffset < -bg1Sprite.getWidth() )
@@ -872,7 +894,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelTwo(player, e);
+        levelOne(player, e);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
