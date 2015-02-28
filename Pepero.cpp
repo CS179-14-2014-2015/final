@@ -554,6 +554,7 @@ class Player{
     bool run = false;
     bool running = false;
     bool jumped = true;
+    int jumpCounter = 0;
 };
 
 Player::Player(double x, double y){
@@ -576,6 +577,7 @@ void Player::update(){
     }
     if (position.y > SCREEN_HEIGHT - 50){
       position.y = SCREEN_HEIGHT - 50;
+      jumpCounter = 0;
     }
 }
 
@@ -656,10 +658,11 @@ void Player::move(SDL_Event &e){
       }
    }
 
-   if (e.key.keysym.sym == SDLK_UP && jumped)
+   if (e.key.keysym.sym == SDLK_UP && jumped && (jumpCounter < 2))
    {
        position.y -= jumpHeight;
        jumped = false;
+       jumpCounter++;
    }
   }
   else if (e.type == SDL_KEYUP)
@@ -674,6 +677,7 @@ void Player::move(SDL_Event &e){
     }
     if (e.key.keysym.sym == SDLK_UP)
       jumped = true;
+
   }
 }
 
