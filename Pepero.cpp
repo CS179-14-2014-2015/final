@@ -10,7 +10,7 @@
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 300;
 
-const int FPS = 20;
+const int FPS = 40;
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 //The window renderer
@@ -519,6 +519,7 @@ class LandTileGroup{
    LandTileGroup(float x, float y);
    ~LandTileGroup();
    void move();
+   void moveLand();
    void render();
    std::vector<LandTile> container;
 };
@@ -536,11 +537,10 @@ class Player{
     Vector2D position,velocity,dimension;
 
     // Physics
-    double Gravity = 4.75;
-    double gCap = 6.6;
+    double Gravity = 2;
+    double gCap = 4;
     double gVel = 0;
-    float velYCap = 50;
-    double jumpHeight = 100;
+    double jumpHeight = 80;
 
     // AABB
     SDL_Rect collider, result;
@@ -553,14 +553,15 @@ class Player{
     // control flags
     bool run = false;
     bool running = false;
-    bool jumped = true;
+    bool notJumped = true;
     int jumpCounter = 0;
+    bool onTile = false;
 };
 
 Player::Player(double x, double y){
  position.x = x;
  position.y = y;
- velocity.x = 10;
+ velocity.x = 5;
  velocity.y = 50;
  dimension.x = playerSprite.getWidth()/3;
  dimension.y = playerSprite.getHeight()/2;
@@ -570,6 +571,10 @@ Player::Player(double x, double y){
 Player::~Player(){}
 
 void Player::update(){
+    if (onTile)
+       gVel = 0;
+
+    position.x -= 1;
     position.y = position.y + gVel;
     gVel = gVel + Gravity;
     if (gVel > gCap){
@@ -579,6 +584,7 @@ void Player::update(){
       position.y = SCREEN_HEIGHT - 50;
       jumpCounter = 0;
     }
+
 }
 
 void Player::render(){
@@ -658,10 +664,10 @@ void Player::move(SDL_Event &e){
       }
    }
 
-   if (e.key.keysym.sym == SDLK_UP && jumped && (jumpCounter < 2))
+   if (e.key.keysym.sym == SDLK_UP && notJumped && (jumpCounter < 2))
    {
        position.y -= jumpHeight;
-       jumped = false;
+       notJumped = false;
        jumpCounter++;
    }
   }
@@ -676,17 +682,18 @@ void Player::move(SDL_Event &e){
       run = false;
     }
     if (e.key.keysym.sym == SDLK_UP)
-      jumped = true;
+      notJumped = true;
+
   }
 }
 
 
 void Player::LandTileCollision(LandTileGroup &landTiles){
+
+  onTile = false;
+
   // calculate player collider
   SDL_Rect tileCollider;
-
-  int counter = 0;
-  int containerSize = landTiles.container.size() - 1;
 
   collider.x = position.x;
   collider.y = position.y;
@@ -702,23 +709,22 @@ void Player::LandTileCollision(LandTileGroup &landTiles){
    collided = SDL_IntersectRect(&collider, &tileCollider, &result);
 
    if (collided){
-     if (result.w > 0 && (counter == 0 || counter == containerSize)){
+     if (result.w < result.h){
        if (position.x < tile.position.x)
            position.x -= (result.w);
        else if (position.x > tile.position.x)
            position.x += result.w ;
        }
-     if (result.h > 0){
-        if (position.y < tile.position.y)
-           position.y -= result.h ;
+     if (result.h < result.w){
+        if (position.y < tile.position.y){
+           position.y -= (result.h) ;
+           onTile = true;
+           jumpCounter = 0;
+           }
         else if (position.y > tile.position.y)
-           position.y += result.h ;
+           position.y += result.h;
        }
      }
-//     if (result.h > 0 && position.y > tile.position.y){
-//       position.x -= result.h;
-//     }
-
   }
 }
 
@@ -750,7 +756,7 @@ LandTileGroup::LandTileGroup(float x , float y ){
 
 void LandTileGroup::move(){
  for (auto &tile : container){
-   tile.position.x -= 10;
+   tile.position.x -= 1;
  }
 
  if (container[0].position.x < 0){
@@ -761,6 +767,16 @@ void LandTileGroup::move(){
      }
    }
 }
+
+void LandTileGroup::moveLand(){
+ int movement = -1;
+ for (auto &tile : container){
+   tile.position.x += movement;
+   if(tile.position.x < 0 - tile.dimension.x)
+     tile.position.x = SCREEN_WIDTH;
+ }
+}
+
 
 void LandTileGroup::render(){
  for (auto &tile : container){
@@ -794,15 +810,8 @@ void Ball::render()
 
 void Ball::move()
 {
-  static int i = 1;
-  static double amp = 100;
-  static double period = 0.005;
-  if (position.x < 0 || position.x > SCREEN_WIDTH - dimension.x)
-  {
-    i *= -1;
-  }
-  position.x += i;
-  position.y = 5*sin(0.5*position.x*(180/M_PI))+SCREEN_HEIGHT/3;
+  //posX += rand()%8*sin(angle);
+  //posY += rand()%8*sin(angle);
 }
 
 Ball::~Ball()
@@ -813,13 +822,26 @@ Ball::~Ball()
 void levelOne(Player &player, SDL_Event &e){
     static int scrollingOffset = 0;
     static LandTileGroup land(0,0);
-    static LandTileGroup randomLand(200, SCREEN_HEIGHT-60);
-    //logic
-    //randomLand.move();
+    static std::vector<LandTileGroup> randomLand;
+
+    if (randomLand.empty()){
+      for (int i = 0; i < 4; i++)
+       randomLand.emplace_back(SCREEN_WIDTH + rand() % 300, rand() % (SCREEN_HEIGHT - 100));
+    }
+
+    // Movement
+    land.moveLand();
+    for (auto &tiles : randomLand){
+      tiles.move();
+    }
     player.update();
     player.move(e);
 
-    player.LandTileCollision(randomLand);
+
+    // Collision detection - resolution
+    for (auto &tiles : randomLand){
+      player.LandTileCollision(tiles);
+    }
 
     scrollingOffset-= 2;
 				if( scrollingOffset < -bg1Sprite.getWidth() )
@@ -835,9 +857,13 @@ void levelOne(Player &player, SDL_Event &e){
 				bg1Sprite.render( scrollingOffset, 0 );
 				bg1Sprite.render( scrollingOffset + bg1Sprite.getWidth(), 0 );
 
-
+    // Rendering
     land.render();
-    randomLand.render();
+
+    for (auto &tiles : randomLand){
+      tiles.render();
+    }
+
     player.render();
 
 				//Update screen
@@ -848,7 +874,6 @@ void levelTwo(Player &player, SDL_Event &e){
   static LandTileGroup a(100,100);
   static Ball *b = new Ball();
   player.move(e);
-  b->move();
 
   SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
   SDL_RenderClear( gRenderer );
@@ -905,7 +930,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelTwo(player, e);
+        levelOne(player, e);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
