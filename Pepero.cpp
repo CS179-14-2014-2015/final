@@ -519,6 +519,7 @@ class LandTileGroup{
    LandTileGroup(float x, float y);
    ~LandTileGroup();
    void move();
+   void moveLand();
    void render();
    std::vector<LandTile> container;
 };
@@ -555,12 +556,13 @@ class Player{
     bool running = false;
     bool jumped = true;
     int jumpCounter = 0;
+    bool onTile = false;
 };
 
 Player::Player(double x, double y){
  position.x = x;
  position.y = y;
- velocity.x = 10;
+ velocity.x = 5;
  velocity.y = 50;
  dimension.x = playerSprite.getWidth()/3;
  dimension.y = playerSprite.getHeight()/2;
@@ -570,6 +572,7 @@ Player::Player(double x, double y){
 Player::~Player(){}
 
 void Player::update(){
+    position.x -= 1;
     position.y = position.y + gVel;
     gVel = gVel + Gravity;
     if (gVel > gCap){
@@ -579,6 +582,8 @@ void Player::update(){
       position.y = SCREEN_HEIGHT - 50;
       jumpCounter = 0;
     }
+    if (onTile)
+       position.x -= 10;
 }
 
 void Player::render(){
@@ -682,9 +687,11 @@ void Player::move(SDL_Event &e){
 
 
 void Player::LandTileCollision(LandTileGroup &landTiles){
+
+  onTile = false;
+
   // calculate player collider
   SDL_Rect tileCollider;
-
   int counter = 0;
   int containerSize = landTiles.container.size() - 1;
 
@@ -702,23 +709,22 @@ void Player::LandTileCollision(LandTileGroup &landTiles){
    collided = SDL_IntersectRect(&collider, &tileCollider, &result);
 
    if (collided){
-     if (result.w > 0 && (counter == 0 || counter == containerSize)){
+     if (result.w < result.h){
        if (position.x < tile.position.x)
            position.x -= (result.w);
        else if (position.x > tile.position.x)
            position.x += result.w ;
        }
-     if (result.h > 0){
-        if (position.y < tile.position.y)
-           position.y -= result.h ;
+     if (result.h < result.w){
+        if (position.y < tile.position.y){
+           position.y = (tile.position.y - tile.dimension.y - 10) ;//(result.h - 1) ;
+           onTile = true;
+           jumpCounter = 0;
+           }
         else if (position.y > tile.position.y)
-           position.y += result.h ;
+           position.y += result.h;
        }
      }
-//     if (result.h > 0 && position.y > tile.position.y){
-//       position.x -= result.h;
-//     }
-
   }
 }
 
@@ -761,6 +767,16 @@ void LandTileGroup::move(){
      }
    }
 }
+
+void LandTileGroup::moveLand(){
+ int movement = -1;
+ for (auto &tile : container){
+   tile.position.x += movement;
+   if(tile.position.x < 0 - tile.dimension.x)
+     tile.position.x = SCREEN_WIDTH;
+ }
+}
+
 
 void LandTileGroup::render(){
  for (auto &tile : container){
@@ -813,14 +829,31 @@ Ball::~Ball()
 void levelOne(Player &player, SDL_Event &e){
     static int scrollingOffset = 0;
     static LandTileGroup land(0,0);
-    static LandTileGroup randomLand(200, SCREEN_HEIGHT-60);
+    static std::vector<LandTileGroup> randomLand;
+
+    if (randomLand.empty()){
+      for (int i = 0; i < 4; i++)
+       randomLand.emplace_back(SCREEN_WIDTH + rand() % 300, rand() % (SCREEN_HEIGHT - 100));
+    }
+
+    //static LandTileGroup randomLand(SCREEN_WIDTH, SCREEN_HEIGHT-60);
+    //static LandTileGroup randomLand2(SCREEN_WIDTH, SCREEN_HEIGHT-100);
     //logic
     //randomLand.move();
+    //randomLand2.move();
+    for (auto &tiles : randomLand){
+      tiles.move();
+    }
+
+    land.moveLand();
     player.update();
     player.move(e);
 
-    player.LandTileCollision(randomLand);
 
+
+    for (auto &tiles : randomLand){
+      player.LandTileCollision(tiles);
+    }
     scrollingOffset-= 2;
 				if( scrollingOffset < -bg1Sprite.getWidth() )
 				{
@@ -837,7 +870,11 @@ void levelOne(Player &player, SDL_Event &e){
 
 
     land.render();
-    randomLand.render();
+
+    for (auto &tiles : randomLand){
+      tiles.render();
+    }
+
     player.render();
 
 				//Update screen
