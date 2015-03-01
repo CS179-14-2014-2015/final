@@ -571,8 +571,10 @@ Player::Player(double x, double y){
 Player::~Player(){}
 
 void Player::update(){
-    if (onTile)
+    if (onTile){
        gVel = 0;
+       onTile = false;
+    }
 
     position.x -= 1;
     position.y = position.y + gVel;
@@ -670,6 +672,10 @@ void Player::move(SDL_Event &e){
        notJumped = false;
        jumpCounter++;
    }
+
+   if (e.key.keysym.sym == SDLK_DOWN){
+     position.y += 20;
+   }
   }
   else if (e.type == SDL_KEYUP)
   {
@@ -689,8 +695,6 @@ void Player::move(SDL_Event &e){
 
 
 void Player::LandTileCollision(LandTileGroup &landTiles){
-
-  onTile = false;
 
   // calculate player collider
   SDL_Rect tileCollider;
@@ -721,9 +725,8 @@ void Player::LandTileCollision(LandTileGroup &landTiles){
            onTile = true;
            jumpCounter = 0;
            }
-        else if (position.y > tile.position.y)
-           position.y += result.h;
-       }
+        }
+     break;
      }
   }
 }
