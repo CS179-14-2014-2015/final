@@ -360,6 +360,7 @@ LTexture landSprite;
 LTexture bg1Sprite;
 LTexture bg2Sprite;
 LTexture ballSprite;
+LTexture boulderSprite;
 
 const int PLAYER_ANIMATION_FRAMES = 6;
 SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
@@ -468,6 +469,12 @@ bool loadMedia()
     success = false;
 	 }
 
+  if( !boulderSprite.loadFromFile( "Assets/Boulder.png" ) )
+	 {
+	 	printf( "Failed to load boulder texture!\n" );
+	 	success = false;
+	 }
+
 	 if( !ballSprite.loadFromFile( "Assets/balls.png" ) )
 	 {
 	 	printf( "Failed to load ball texture!\n" );
@@ -493,7 +500,9 @@ void close()
 	landSprite.free();
 	playerSprite.free();
 	bg1Sprite.free();
-  bg2Sprite.free();
+ bg2Sprite.free();
+ ballSprite.free();
+ boulderSprite.free();
 
 	//Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -533,8 +542,10 @@ class Player{
     void move(SDL_Event &e);
     void LandTileCollision(LandTileGroup &landTiles);
 
+    Vector2D position;
+
   private:
-    Vector2D position,velocity,dimension;
+    Vector2D velocity,dimension;
 
     // Physics
     double Gravity = 2;
@@ -558,6 +569,25 @@ class Player{
     bool onTile = false;
 };
 
+class Boulder{
+  public:
+    Boulder();
+    void render();
+    ~Boulder();
+  private:
+    Vector2D position;
+    int animationClip = 0;
+};
+
+class Ball{
+  public:
+    Ball();
+    ~Ball();
+    void render();
+    void move();
+    Vector2D position, dimension;
+};
+
 Player::Player(double x, double y){
  position.x = x;
  position.y = y;
@@ -576,7 +606,6 @@ void Player::update(){
        onTile = false;
     }
 
-    position.x -= 1;
     position.y = position.y + gVel;
     gVel = gVel + Gravity;
     if (gVel > gCap){
@@ -789,14 +818,21 @@ void LandTileGroup::render(){
 
 LandTileGroup::~LandTileGroup(){};
 
-class Ball{
-  public:
-    Ball();
-    ~Ball();
-    void render();
-    void move();
-    Vector2D position, dimension;
-};
+Boulder::Boulder(){
+  position.x = 0;
+  position.y = SCREEN_HEIGHT - boulderSprite.getHeight() - 15;
+}
+
+void Boulder::render(){
+   if (animationClip == 360)
+      animationClip = 0;
+
+   boulderSprite.render(position.x,position.y, nullptr, animationClip);
+
+   animationClip++;
+}
+
+Boulder::~Boulder(){}
 
 Ball::Ball()
 {
@@ -826,6 +862,7 @@ void levelOne(Player &player, SDL_Event &e){
     static int scrollingOffset = 0;
     static LandTileGroup land(0,0);
     static std::vector<LandTileGroup> randomLand;
+    static Boulder *boulder = new Boulder();
 
     if (randomLand.empty()){
       for (int i = 0; i < 4; i++)
@@ -837,6 +874,7 @@ void levelOne(Player &player, SDL_Event &e){
     for (auto &tiles : randomLand){
       tiles.move();
     }
+    player.position.x -= 1; // Level specific
     player.update();
     player.move(e);
 
@@ -867,6 +905,7 @@ void levelOne(Player &player, SDL_Event &e){
       tiles.render();
     }
 
+    boulder->render();
     player.render();
 
 				//Update screen
