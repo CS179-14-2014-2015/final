@@ -677,7 +677,6 @@ void Player::move(SDL_Event &e){
     }
     if (e.key.keysym.sym == SDLK_UP)
       jumped = true;
-
   }
 }
 
@@ -795,8 +794,15 @@ void Ball::render()
 
 void Ball::move()
 {
-  //posX += rand()%8*sin(angle);
-  //posY += rand()%8*sin(angle);
+  static int i = 1;
+  static double amp = 100;
+  static double period = 0.005;
+  if (position.x < 0 || position.x > SCREEN_WIDTH - dimension.x)
+  {
+    i *= -1;
+  }
+  position.x += i;
+  position.y = 5*sin(0.5*position.x*(180/M_PI))+SCREEN_HEIGHT/3;
 }
 
 Ball::~Ball()
@@ -842,6 +848,7 @@ void levelTwo(Player &player, SDL_Event &e){
   static LandTileGroup a(100,100);
   static Ball *b = new Ball();
   player.move(e);
+  b->move();
 
   SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
   SDL_RenderClear( gRenderer );
@@ -898,7 +905,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelOne(player, e);
+        levelTwo(player, e);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
