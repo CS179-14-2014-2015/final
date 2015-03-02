@@ -533,6 +533,32 @@ class LandTileGroup{
    std::vector<LandTile> container;
 };
 
+
+class Boulder{
+  public:
+    Boulder();
+    void render();
+    ~Boulder();
+
+    SDL_Rect boulderCollider;
+
+  private:
+    Vector2D position;
+    int animationClip = 0;
+};
+
+class Ball{
+  public:
+    Ball();
+    ~Ball();
+    void render();
+    void move();
+
+  private:
+    Vector2D position, dimension;
+    int velX = 1;
+};
+
 class Player{
   public:
     Player(double, double);
@@ -541,6 +567,7 @@ class Player{
     void render();
     void move(SDL_Event &e);
     void LandTileCollision(LandTileGroup &landTiles);
+    void boulderCollision(Boulder &);
 
     Vector2D position;
 
@@ -555,7 +582,8 @@ class Player{
 
     // AABB
     SDL_Rect collider, result;
-    bool collided;
+    bool collidedTile = false;
+    bool collidedBoulder = false;
 
     // Rendering
     SDL_Rect* currentClip = &gSpriteClips[2];
@@ -568,25 +596,6 @@ class Player{
     int jumpCounter = 0;
     bool onTile = false;
     bool notSkipped = true;
-};
-
-class Boulder{
-  public:
-    Boulder();
-    void render();
-    ~Boulder();
-  private:
-    Vector2D position;
-    int animationClip = 0;
-};
-
-class Ball{
-  public:
-    Ball();
-    ~Ball();
-    void render();
-    void move();
-    Vector2D position, dimension;
 };
 
 Player::Player(double x, double y){
@@ -657,7 +666,7 @@ void Player::render(){
       }
     }
   }
-  playerSprite.render(position.x,position.y,currentClip);
+    playerSprite.render(position.x,position.y,currentClip);
 }
 
 void Player::move(SDL_Event &e){
@@ -742,9 +751,9 @@ void Player::LandTileCollision(LandTileGroup &landTiles){
    tileCollider.w = tile.dimension.x;
    tileCollider.h = tile.dimension.y;
 
-   collided = SDL_IntersectRect(&collider, &tileCollider, &result);
+   collidedTile = SDL_IntersectRect(&collider, &tileCollider, &result);
 
-   if (collided){
+   if (collidedTile){
      if (result.w < result.h){
        if (position.x < tile.position.x)
            position.x -= (result.w);
@@ -761,6 +770,16 @@ void Player::LandTileCollision(LandTileGroup &landTiles){
      break;
      }
   }
+}
+
+void Player::boulderCollision(Boulder &boulder){
+
+     collidedBoulder = SDL_IntersectRect(&collider, &boulder.boulderCollider, &result);
+     if (collidedBoulder){
+        position.x = SCREEN_WIDTH/2;
+        position.y = SCREEN_HEIGHT/2;
+        onTile = false;
+     }
 }
 
 LandTile::LandTile(double x, double y){
@@ -824,6 +843,10 @@ LandTileGroup::~LandTileGroup(){};
 Boulder::Boulder(){
   position.x = 0;
   position.y = SCREEN_HEIGHT - boulderSprite.getHeight() - 15;
+  boulderCollider.x = position.x;
+  boulderCollider.y = position.y;
+  boulderCollider.w = boulderSprite.getWidth();
+  boulderCollider.h = boulderSprite.getHeight();
 }
 
 void Boulder::render(){
@@ -852,8 +875,12 @@ void Ball::render()
 
 void Ball::move()
 {
-  //posX += rand()%8*sin(angle);
-  //posY += rand()%8*sin(angle);
+ if (position.x > SCREEN_WIDTH-dimension.x || position.x < 0){
+    velX *= -1;
+ }
+  position.x += velX;
+
+  position.y = sin((position.x / pow(5,4)) * 180/ M_PI ) * 100 + SCREEN_HEIGHT/2;
 }
 
 Ball::~Ball()
@@ -865,7 +892,7 @@ void levelOne(Player &player, SDL_Event &e){
     static int scrollingOffset = 0;
     static LandTileGroup land(0,0);
     static std::vector<LandTileGroup> randomLand;
-    static Boulder *boulder = new Boulder();
+    static Boulder boulder;
 
     if (randomLand.empty()){
       for (int i = 0; i < 4; i++)
@@ -886,6 +913,7 @@ void levelOne(Player &player, SDL_Event &e){
     for (auto &tiles : randomLand){
       player.LandTileCollision(tiles);
     }
+    player.boulderCollision(boulder);
 
     scrollingOffset-= 2;
 				if( scrollingOffset < -bg1Sprite.getWidth() )
@@ -908,7 +936,7 @@ void levelOne(Player &player, SDL_Event &e){
       tiles.render();
     }
 
-    boulder->render();
+    boulder.render();
     player.render();
 
 				//Update screen
@@ -919,6 +947,7 @@ void levelTwo(Player &player, SDL_Event &e){
   static LandTileGroup a(100,100);
   static Ball *b = new Ball();
   player.move(e);
+  b->move();
 
   SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
   SDL_RenderClear( gRenderer );
