@@ -567,6 +567,7 @@ class Player{
     bool notJumped = true;
     int jumpCounter = 0;
     bool onTile = false;
+    bool notSkipped = true;
 };
 
 class Boulder{
@@ -601,10 +602,7 @@ Player::Player(double x, double y){
 Player::~Player(){}
 
 void Player::update(){
-    if (onTile){
-       gVel = 0;
-       onTile = false;
-    }
+
 
     position.y = position.y + gVel;
     gVel = gVel + Gravity;
@@ -702,8 +700,11 @@ void Player::move(SDL_Event &e){
        jumpCounter++;
    }
 
-   if (e.key.keysym.sym == SDLK_DOWN){
+   if (e.key.keysym.sym == SDLK_DOWN && notSkipped && onTile){
      position.y += 20;
+     notSkipped = false;
+     onTile = false;
+     notJumped = false;
    }
   }
   else if (e.type == SDL_KEYUP)
@@ -719,15 +720,17 @@ void Player::move(SDL_Event &e){
     if (e.key.keysym.sym == SDLK_UP)
       notJumped = true;
 
+    if (e.key.keysym.sym == SDLK_DOWN)
+      notSkipped = true;
   }
 }
 
 
 void Player::LandTileCollision(LandTileGroup &landTiles){
 
-  // calculate player collider
-  SDL_Rect tileCollider;
 
+  SDL_Rect tileCollider;
+  // calculate player collider
   collider.x = position.x;
   collider.y = position.y;
   collider.w = dimension.x;
