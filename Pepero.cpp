@@ -814,10 +814,8 @@ void LandTileGroup::move(){
  }
 
  if (container[0].position.x < 0){
-   int y = rand() % (SCREEN_HEIGHT - 100) + 50;
    for (int i = 0; i <= rand() % 5 + 2 ; i++){
      container[i].position.x = SCREEN_WIDTH + i*landSprite.getWidth();
-     container[i].position.y = y;
      }
    }
 }
@@ -895,8 +893,8 @@ void levelOne(Player &player, SDL_Event &e){
     static Boulder boulder;
 
     if (randomLand.empty()){
-      for (int i = 0; i < 4; i++)
-       randomLand.emplace_back(SCREEN_WIDTH + rand() % 300, rand() % (SCREEN_HEIGHT - 100));
+      for (int i = 0; i < 8; i++)
+       randomLand.emplace_back(SCREEN_WIDTH + rand() % 500 , i * 30 + 30);
     }
 
     // Movement
