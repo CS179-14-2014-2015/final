@@ -796,7 +796,7 @@ void LandTile::render(){
 }
 
 LandTileGroup::LandTileGroup(float x , float y ){
- if (x == NULL || y == NULL){
+ if (x == 0 || y == 0){
    for (int i = 0; i <= SCREEN_WIDTH/landSprite.getWidth(); i++){
      container.emplace_back(landSprite.getWidth()*i, SCREEN_HEIGHT-landSprite.getHeight());
    }
@@ -846,7 +846,7 @@ Boulder::Boulder(){
   boulderCollider.x = position.x;
   boulderCollider.y = position.y;
   boulderCollider.w = boulderSprite.getWidth();
-  boulderCollider.h = boulderSprite.getHeight();
+  boulderCollider.h = boulderSprite.getHeight()/1.25;
 }
 
 void Boulder::render(){
