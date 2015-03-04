@@ -633,8 +633,6 @@ Player::Player(double x, double y){
 Player::~Player(){}
 
 void Player::update(){
-
-
     position.y = position.y + gVel;
     gVel = gVel + Gravity;
     if (gVel > gCap){
@@ -644,7 +642,6 @@ void Player::update(){
       position.y = SCREEN_HEIGHT - 50;
       jumpCounter = 0;
     }
-
 }
 
 void Player::render(){
@@ -967,7 +964,8 @@ Boulder::Boulder(){
   dimension.x = boulderSprite.getWidth();
   dimension.y = boulderSprite.getHeight();
   position.x = 0;
-  position.y = SCREEN_HEIGHT - dimension.y - 15;
+  position.y = SCREEN_HEIGHT - dimension.y - landSprite.getHeight();
+  //-4 because of extra 2 pixels on both sides in png file
   collider.r = dimension.x/2 - 4;
   collider.x = position.x + collider.r;
   collider.y = position.y + collider.r;
@@ -1025,6 +1023,7 @@ void Ball::moveBernoulli(){
     double x = 100 * pow(2, 0.5)  * cos(framestep) + SCREEN_WIDTH/2;
     double y = 100 * pow(2, 0.5)  * sin(framestep) * cos(framestep) + SCREEN_HEIGHT/3;
 
+
     position.x = x;
     position.y = y;
     collider.x = position.x + collider.r;
@@ -1053,7 +1052,7 @@ void Portal::render(){
 Portal::~Portal(){
 }
 
-void levelOne(Player &player, SDL_Event &e){
+void levelTwo(Player &player, SDL_Event &e){
     static int scrollingOffset = 0;
     static LandTileGroup land(0,0);
     static std::vector<LandTileGroup> randomLand;
@@ -1125,7 +1124,7 @@ void levelOne(Player &player, SDL_Event &e){
       SDL_RenderPresent( gRenderer );
 }
 
-void levelTwo(Player &player, SDL_Event &e){
+void levelOne(Player &player, SDL_Event &e){
   static LandTileGroup a(SCREEN_WIDTH-100,200);
   static Ball ball;
   static Portal portal;
