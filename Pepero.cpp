@@ -547,8 +547,6 @@ class Boulder{
     Vector2D position, dimension;
     ~Boulder();
 
-    //SDL_Rect boulderCollider;
-
   private:
     int animationClip = 0;
 };
@@ -943,13 +941,9 @@ LandTileGroup::LandTileGroup(float x , float y ){
 void LandTileGroup::move(){
  for (auto &tile : container){
    tile.position.x -= 1;
+   if (tile.position.x < 0 - tile.dimension.x)
+      tile.position.x = SCREEN_WIDTH;
  }
-
- if (container[0].position.x < 0){
-   for (int i = 0; i <= rand() % 5 + 2 ; i++){
-     container[i].position.x = SCREEN_WIDTH + i*landSprite.getWidth();
-     }
-   }
 }
 
 void LandTileGroup::moveLand(){
@@ -1023,19 +1017,19 @@ Ball::~Ball()
 }
 
 void Ball::moveBernoulli(){
-   static double step = 0.01;
+   static double step = 0.1;
    static double framestep = 0.01;
     if (framestep > (2 * M_PI))
        step *= -1;
 
     double x = 100 * pow(2, 0.5)  * cos(framestep) + SCREEN_WIDTH/2;
-    double y = 100 * pow(2, 0.5)  * sin(framestep) * cos(framestep) + SCREEN_HEIGHT/2;
+    double y = 100 * pow(2, 0.5)  * sin(framestep) * cos(framestep) + SCREEN_HEIGHT/3;
 
     position.x = x;
     position.y = y;
-
+    collider.x = position.x + collider.r;
+    collider.y = position.y + collider.r;
     framestep += step;
-
 }
 
 Portal::Portal(){
@@ -1068,8 +1062,8 @@ void levelOne(Player &player, SDL_Event &e){
     static Portal portal;
 
     if (randomLand.empty()){
-      for (int i = 0; i < 8; i++)
-       randomLand.emplace_back(SCREEN_WIDTH + rand() % 500 , i * 30 + 30);
+      for (int i = 0; i < 4; i++)
+       randomLand.emplace_back(SCREEN_WIDTH + rand() % 300 , i * 60 + 32);
     }
 
     // Movement
@@ -1077,13 +1071,20 @@ void levelOne(Player &player, SDL_Event &e){
     for (auto &tiles : randomLand){
       tiles.move();
     }
-    ball.moveBernoulli();
     player.position.x -= 1; // Level specific
     player.update();
     player.move(e);
     player.ballCollision(ball);
     player.portalCollision(portal);
 
+    if (!player.portalOn)
+    {
+      ball.moveBernoulli();
+    }
+    else
+    {
+      ball.position.x = -100;
+    }
 
     // Collision detection - resolution
     for (auto &tiles : randomLand){
@@ -1091,12 +1092,11 @@ void levelOne(Player &player, SDL_Event &e){
     }
     player.boulderCollision(boulder);
 
-    scrollingOffset-= 2;
+    scrollingOffset-= 1;
 				if( scrollingOffset < -bg1Sprite.getWidth() )
 				{
 					scrollingOffset = 0;
 				}
-
 
  				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
@@ -1121,8 +1121,8 @@ void levelOne(Player &player, SDL_Event &e){
       portal.render();
     }
 
-				//Update screen
-				SDL_RenderPresent( gRenderer );
+			//Update screen
+      SDL_RenderPresent( gRenderer );
 }
 
 void levelTwo(Player &player, SDL_Event &e){
