@@ -10,7 +10,7 @@
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 300;
 
-const int FPS = 40;
+const int FPS = 30;
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 //The window renderer
@@ -18,8 +18,7 @@ SDL_Renderer* gRenderer = NULL;
 
 
 //Texture wrapper class from LazyFoo
-class LTexture
-{
+class LTexture{
 	public:
 		//Initializes variables
 		LTexture();
@@ -63,8 +62,7 @@ class LTexture
 		int mHeight;
 };
 
-class Vector2D
-{
+class Vector2D{
 
 public:
 	Vector2D(double X = 0, double Y = 0)
@@ -203,22 +201,21 @@ bool loadMedia();
 //Frees media and shuts down SDL
 void close();
 
-LTexture::LTexture()
-{
+double distanceSquared(int x1, int y1, int x2, int y2);
+
+LTexture::LTexture(){
 	//Initialize
 	mTexture = NULL;
 	mWidth = 0;
 	mHeight = 0;
 }
 
-LTexture::~LTexture()
-{
+LTexture::~LTexture(){
 	//Deallocate
 	free();
 }
 
-bool LTexture::loadFromFile( std::string path )
-{
+bool LTexture::loadFromFile( std::string path ){
 	//Get rid of preexisting texture
 	free();
 
@@ -259,8 +256,7 @@ bool LTexture::loadFromFile( std::string path )
 }
 
 #ifdef _SDL_TTF_H
-bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColor )
-{
+bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColor ){
 	//Get rid of preexisting texture
 	free();
 
@@ -295,8 +291,7 @@ bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColo
 }
 #endif
 
-void LTexture::free()
-{
+void LTexture::free(){
 	//Free texture if it exists
 	if( mTexture != NULL )
 	{
@@ -307,26 +302,22 @@ void LTexture::free()
 	}
 }
 
-void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
-{
+void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue ){
 	//Modulate texture rgb
 	SDL_SetTextureColorMod( mTexture, red, green, blue );
 }
 
-void LTexture::setBlendMode( SDL_BlendMode blending )
-{
+void LTexture::setBlendMode( SDL_BlendMode blending ){
 	//Set blending function
 	SDL_SetTextureBlendMode( mTexture, blending );
 }
 
-void LTexture::setAlpha( Uint8 alpha )
-{
+void LTexture::setAlpha( Uint8 alpha ){
 	//Modulate texture alpha
 	SDL_SetTextureAlphaMod( mTexture, alpha );
 }
 
-void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
-{
+void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip ){
 	//Set rendering space and render to screen
 	SDL_Rect renderQuad = { x, y, mWidth, mHeight };
 
@@ -341,13 +332,11 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
 	SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
 }
 
-int LTexture::getWidth()
-{
+int LTexture::getWidth(){
 	return mWidth;
 }
 
-int LTexture::getHeight()
-{
+int LTexture::getHeight(){
 	return mHeight;
 }
 
@@ -368,8 +357,7 @@ SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
 const int BALL_ANIMATION_FRAMES = 7;
 SDL_Rect ballSpriteClip[BALL_ANIMATION_FRAMES];
 
-bool init()
-{
+bool init(){
 	//Initialization flag
 	bool success = true;
 
@@ -422,8 +410,7 @@ bool init()
 	return success;
 }
 
-bool loadMedia()
-{
+bool loadMedia(){
 	//Loading success flag
 	bool success = true;
 
@@ -494,8 +481,7 @@ bool loadMedia()
     return success;
 }
 
-void close()
-{
+void close(){
 	//Free loaded images
 	landSprite.free();
 	playerSprite.free();
@@ -513,6 +499,12 @@ void close()
 	//Quit SDL subsystems
 	IMG_Quit();
 	SDL_Quit();
+}
+
+double distanceSquared( int x1, int y1, int x2, int y2 ){
+    int deltaX = x2 - x1;
+    int deltaY = y2 - y1;
+    return deltaX*deltaX + deltaY*deltaY;
 }
 
 class LandTile{
@@ -533,7 +525,6 @@ class LandTileGroup{
    std::vector<LandTile> container;
 };
 
-
 class Boulder{
   public:
     Boulder();
@@ -547,17 +538,31 @@ class Boulder{
     int animationClip = 0;
 };
 
+struct Circle{
+  int x,y;
+  int r;
+};
+
 class Ball{
   public:
     Ball();
+    Circle collider;
     ~Ball();
     void render();
     void move();
+    Vector2D position, dimension;
 
   private:
-    Vector2D position, dimension;
     int velX = 1;
 };
+
+class Portal{
+  public:
+    Portal();
+    Vector2D position, dimension;
+    void render();
+    ~Portal();
+}
 
 class Player{
   public:
@@ -568,6 +573,8 @@ class Player{
     void move(SDL_Event &e);
     void LandTileCollision(LandTileGroup &landTiles);
     void boulderCollision(Boulder &);
+    bool ballCollision(Ball &);
+    bool nextLevel = false;
 
     Vector2D position;
 
@@ -596,6 +603,7 @@ class Player{
     int jumpCounter = 0;
     bool onTile = false;
     bool notSkipped = true;
+
 };
 
 Player::Player(double x, double y){
@@ -679,7 +687,7 @@ void Player::move(SDL_Event &e){
     {
       direction = 0;
       run = true;
-      if (position.x == 0)
+      if (position.x <= 0)
       {
         position.x = 0;
       }
@@ -692,9 +700,9 @@ void Player::move(SDL_Event &e){
     {
       direction = 1;
       run = true;
-      if (position.x == 870)
+      if (position.x >= SCREEN_WIDTH - dimension.x)
       {
-        position.x = 870;
+        position.x = SCREEN_WIDTH - dimension.x;
       }
       else
       {
@@ -728,12 +736,13 @@ void Player::move(SDL_Event &e){
     }
     if (e.key.keysym.sym == SDLK_UP)
       notJumped = true;
+      run = false;
 
     if (e.key.keysym.sym == SDLK_DOWN)
       notSkipped = true;
+      run = false;
   }
 }
-
 
 void Player::LandTileCollision(LandTileGroup &landTiles){
 
@@ -780,6 +789,46 @@ void Player::boulderCollision(Boulder &boulder){
         position.y = SCREEN_HEIGHT/2;
         onTile = false;
      }
+}
+
+//Algorithm from LazyFoo
+bool Player::ballCollision(Ball& ball){
+  //closest point on collision box
+  int x, y;
+
+  if (ball.collider.x < position.x)
+  {
+      x = position.x;
+  }
+  else if (ball.collider.x > position.x + dimension.x)
+  {
+      x = position.x + dimension.x;
+  }
+  else
+  {
+    x = ball.collider.x;
+  }
+
+  if (ball.collider.y < position.y)
+  {
+    y = position.y;
+  }
+  else if (ball.collider.y > position.y + dimension.y)
+  {
+    y = position.y + dimension.y;
+  }
+  else
+  {
+    y = ball.collider.y;
+  }
+
+  if( distanceSquared( ball.collider.x, ball.collider.y, x, y ) < ball.collider.r * ball.collider.r )
+    {
+        ball.position.x = SCREEN_WIDTH + 100;
+        ball.position.y = SCREEN_HEIGHT + 100;
+        ball.collider.x = ball.position.x + ball.dimension.x;
+        ball.collider.y = ball.position.y + ball.dimension.y;
+    }
 }
 
 LandTile::LandTile(double x, double y){
@@ -864,6 +913,9 @@ Ball::Ball()
   dimension.y = ballSprite.getHeight()/7;
   position.x = (SCREEN_WIDTH/2) - (dimension.x/2);
   position.y = (SCREEN_HEIGHT/3);
+  collider.r = dimension.x/2;
+  collider.x = position.x + collider.r;
+  collider.y = position.y + collider.r;
 }
 
 void Ball::render()
@@ -877,13 +929,21 @@ void Ball::move()
     velX *= -1;
  }
   position.x += velX;
+  position.y = sin(0.08*(position.x) + 1)*50 + SCREEN_HEIGHT/3;
 
-  position.y = sin((position.x / pow(5,4)) * 180/ M_PI ) * 100 + SCREEN_HEIGHT/2;
+  collider.x = position.x + collider.r;
+  collider.y = position.y + collider.r;
 }
 
 Ball::~Ball()
 {
+}
 
+Portal::Portal(){
+
+}
+
+Portal::~Portal(){
 }
 
 void levelOne(Player &player, SDL_Event &e){
@@ -942,24 +1002,23 @@ void levelOne(Player &player, SDL_Event &e){
 }
 
 void levelTwo(Player &player, SDL_Event &e){
-  static LandTileGroup a(100,100);
-  static Ball *b = new Ball();
+  static LandTileGroup a(200,200);
+  static Ball b;
+  player.update();
   player.move(e);
-  b->move();
+  b.move();
+  player.LandTileCollision(a);
+  player.ballCollision(b);
 
   SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
   SDL_RenderClear( gRenderer );
 
   bg2Sprite.render(0,0);
   a.render();
-  b->render();
+  b.render();
   player.render();
 
   SDL_RenderPresent(gRenderer);
-}
-
-void levelThree(){
-
 }
 
 int main( int argc, char* args[] )
@@ -1002,7 +1061,14 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelOne(player, e);
+        if (player.nextLevel == false)
+        {
+          levelTwo(player, e);
+        }
+        else if (player.nextLevel == true)
+        {
+          levelOne(player, e);
+        }
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
