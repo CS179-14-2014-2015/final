@@ -10,7 +10,7 @@
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 300;
 
-const int FPS = 40;
+const int FPS = 30;
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 //The window renderer
@@ -202,6 +202,8 @@ bool loadMedia();
 
 //Frees media and shuts down SDL
 void close();
+
+double distanceSquared(int x1, int y1, int x2, int y2);
 
 LTexture::LTexture()
 {
@@ -515,6 +517,13 @@ void close()
 	SDL_Quit();
 }
 
+double distanceSquared( int x1, int y1, int x2, int y2 )
+{
+    int deltaX = x2 - x1;
+    int deltaY = y2 - y1;
+    return deltaX*deltaX + deltaY*deltaY;
+}
+
 class LandTile{
   public:
     LandTile(double x, double y);
@@ -547,9 +556,15 @@ class Boulder{
     int animationClip = 0;
 };
 
+struct Circle{
+  int x,y;
+  int r;
+};
+
 class Ball{
   public:
     Ball();
+    Circle collider;
     ~Ball();
     void render();
     void move();
@@ -557,6 +572,7 @@ class Ball{
   private:
     Vector2D position, dimension;
     int velX = 1;
+    void shift();
 };
 
 class Player{
@@ -568,6 +584,7 @@ class Player{
     void move(SDL_Event &e);
     void LandTileCollision(LandTileGroup &landTiles);
     void boulderCollision(Boulder &);
+    bool ballCollision(Ball &);
 
     Vector2D position;
 
@@ -679,7 +696,7 @@ void Player::move(SDL_Event &e){
     {
       direction = 0;
       run = true;
-      if (position.x == 0)
+      if (position.x <= 0)
       {
         position.x = 0;
       }
@@ -692,9 +709,9 @@ void Player::move(SDL_Event &e){
     {
       direction = 1;
       run = true;
-      if (position.x == 870)
+      if (position.x >= SCREEN_WIDTH - dimension.x)
       {
-        position.x = 870;
+        position.x = SCREEN_WIDTH - dimension.x;
       }
       else
       {
@@ -728,12 +745,13 @@ void Player::move(SDL_Event &e){
     }
     if (e.key.keysym.sym == SDLK_UP)
       notJumped = true;
+      run = false;
 
     if (e.key.keysym.sym == SDLK_DOWN)
       notSkipped = true;
+      run = false;
   }
 }
-
 
 void Player::LandTileCollision(LandTileGroup &landTiles){
 
@@ -780,6 +798,44 @@ void Player::boulderCollision(Boulder &boulder){
         position.y = SCREEN_HEIGHT/2;
         onTile = false;
      }
+}
+
+//Algorithm from LazyFoo
+bool Player::ballCollision(Ball& ball)
+{
+  //closest point on collision box
+  int x, y;
+
+  if (ball.collider.x < position.x)
+  {
+      x = position.x;
+  }
+  else if (ball.collider.x > position.x + dimension.x)
+  {
+      x = position.x + dimension.x;
+  }
+  else
+  {
+    x = ball.collider.x;
+  }
+
+  if (ball.collider.y < position.y)
+  {
+    y = position.y;
+  }
+  else if (ball.collider.y > position.y + dimension.y)
+  {
+    y = position.y + dimension.y;
+  }
+  else
+  {
+    y = ball.collider.y;
+  }
+
+  if( distanceSquared( ball.collider.x, ball.collider.y, x, y ) < ball.collider.r * ball.collider.r )
+    {
+        printf("collide\n");
+    }
 }
 
 LandTile::LandTile(double x, double y){
@@ -866,6 +922,9 @@ Ball::Ball()
   dimension.y = ballSprite.getHeight()/7;
   position.x = (SCREEN_WIDTH/2) - (dimension.x/2);
   position.y = (SCREEN_HEIGHT/3);
+  collider.r = dimension.x/2;
+  collider.x = position.x + collider.r;
+  collider.y = position.y + collider.r;
 }
 
 void Ball::render()
@@ -879,8 +938,10 @@ void Ball::move()
     velX *= -1;
  }
   position.x += velX;
+  position.y = sin(0.08*(position.x) + 1)*50 + SCREEN_HEIGHT/3;
 
-  position.y = sin((position.x / pow(5,4)) * 180/ M_PI ) * 100 + SCREEN_HEIGHT/2;
+  collider.x = position.x + collider.r;
+  collider.y = position.y + collider.r;
 }
 
 Ball::~Ball()
@@ -944,24 +1005,23 @@ void levelOne(Player &player, SDL_Event &e){
 }
 
 void levelTwo(Player &player, SDL_Event &e){
-  static LandTileGroup a(100,100);
-  static Ball *b = new Ball();
+  static LandTileGroup a(200,200);
+  static Ball b;
+  player.update();
   player.move(e);
-  b->move();
+  b.move();
+  player.LandTileCollision(a);
+  player.ballCollision(b);
 
   SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
   SDL_RenderClear( gRenderer );
 
   bg2Sprite.render(0,0);
   a.render();
-  b->render();
+  b.render();
   player.render();
 
   SDL_RenderPresent(gRenderer);
-}
-
-void levelThree(){
-
 }
 
 int main( int argc, char* args[] )
@@ -993,6 +1053,7 @@ int main( int argc, char* args[] )
 			//While application is running
 			while( !quit )
 			{
+        int level = 1;
         fps.start();
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) != 0 )
@@ -1004,7 +1065,7 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelOne(player, e);
+        levelTwo(player, e);
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
