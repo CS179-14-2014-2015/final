@@ -18,8 +18,7 @@ SDL_Renderer* gRenderer = NULL;
 
 
 //Texture wrapper class from LazyFoo
-class LTexture
-{
+class LTexture{
 	public:
 		//Initializes variables
 		LTexture();
@@ -63,8 +62,7 @@ class LTexture
 		int mHeight;
 };
 
-class Vector2D
-{
+class Vector2D{
 
 public:
 	Vector2D(double X = 0, double Y = 0)
@@ -205,22 +203,19 @@ void close();
 
 double distanceSquared(int x1, int y1, int x2, int y2);
 
-LTexture::LTexture()
-{
+LTexture::LTexture(){
 	//Initialize
 	mTexture = NULL;
 	mWidth = 0;
 	mHeight = 0;
 }
 
-LTexture::~LTexture()
-{
+LTexture::~LTexture(){
 	//Deallocate
 	free();
 }
 
-bool LTexture::loadFromFile( std::string path )
-{
+bool LTexture::loadFromFile( std::string path ){
 	//Get rid of preexisting texture
 	free();
 
@@ -261,8 +256,7 @@ bool LTexture::loadFromFile( std::string path )
 }
 
 #ifdef _SDL_TTF_H
-bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColor )
-{
+bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColor ){
 	//Get rid of preexisting texture
 	free();
 
@@ -297,8 +291,7 @@ bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColo
 }
 #endif
 
-void LTexture::free()
-{
+void LTexture::free(){
 	//Free texture if it exists
 	if( mTexture != NULL )
 	{
@@ -309,26 +302,22 @@ void LTexture::free()
 	}
 }
 
-void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
-{
+void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue ){
 	//Modulate texture rgb
 	SDL_SetTextureColorMod( mTexture, red, green, blue );
 }
 
-void LTexture::setBlendMode( SDL_BlendMode blending )
-{
+void LTexture::setBlendMode( SDL_BlendMode blending ){
 	//Set blending function
 	SDL_SetTextureBlendMode( mTexture, blending );
 }
 
-void LTexture::setAlpha( Uint8 alpha )
-{
+void LTexture::setAlpha( Uint8 alpha ){
 	//Modulate texture alpha
 	SDL_SetTextureAlphaMod( mTexture, alpha );
 }
 
-void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
-{
+void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip ){
 	//Set rendering space and render to screen
 	SDL_Rect renderQuad = { x, y, mWidth, mHeight };
 
@@ -343,13 +332,11 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
 	SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
 }
 
-int LTexture::getWidth()
-{
+int LTexture::getWidth(){
 	return mWidth;
 }
 
-int LTexture::getHeight()
-{
+int LTexture::getHeight(){
 	return mHeight;
 }
 
@@ -370,8 +357,7 @@ SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
 const int BALL_ANIMATION_FRAMES = 7;
 SDL_Rect ballSpriteClip[BALL_ANIMATION_FRAMES];
 
-bool init()
-{
+bool init(){
 	//Initialization flag
 	bool success = true;
 
@@ -424,8 +410,7 @@ bool init()
 	return success;
 }
 
-bool loadMedia()
-{
+bool loadMedia(){
 	//Loading success flag
 	bool success = true;
 
@@ -496,8 +481,7 @@ bool loadMedia()
     return success;
 }
 
-void close()
-{
+void close(){
 	//Free loaded images
 	landSprite.free();
 	playerSprite.free();
@@ -517,8 +501,7 @@ void close()
 	SDL_Quit();
 }
 
-double distanceSquared( int x1, int y1, int x2, int y2 )
-{
+double distanceSquared( int x1, int y1, int x2, int y2 ){
     int deltaX = x2 - x1;
     int deltaY = y2 - y1;
     return deltaX*deltaX + deltaY*deltaY;
@@ -541,7 +524,6 @@ class LandTileGroup{
    void render();
    std::vector<LandTile> container;
 };
-
 
 class Boulder{
   public:
@@ -568,12 +550,19 @@ class Ball{
     ~Ball();
     void render();
     void move();
+    Vector2D position, dimension;
 
   private:
-    Vector2D position, dimension;
     int velX = 1;
-    void shift();
 };
+
+class Portal{
+  public:
+    Portal();
+    Vector2D position, dimension;
+    void render();
+    ~Portal();
+}
 
 class Player{
   public:
@@ -585,6 +574,7 @@ class Player{
     void LandTileCollision(LandTileGroup &landTiles);
     void boulderCollision(Boulder &);
     bool ballCollision(Ball &);
+    bool nextLevel = false;
 
     Vector2D position;
 
@@ -613,6 +603,7 @@ class Player{
     int jumpCounter = 0;
     bool onTile = false;
     bool notSkipped = true;
+
 };
 
 Player::Player(double x, double y){
@@ -801,8 +792,7 @@ void Player::boulderCollision(Boulder &boulder){
 }
 
 //Algorithm from LazyFoo
-bool Player::ballCollision(Ball& ball)
-{
+bool Player::ballCollision(Ball& ball){
   //closest point on collision box
   int x, y;
 
@@ -834,7 +824,10 @@ bool Player::ballCollision(Ball& ball)
 
   if( distanceSquared( ball.collider.x, ball.collider.y, x, y ) < ball.collider.r * ball.collider.r )
     {
-        printf("collide\n");
+        ball.position.x = SCREEN_WIDTH + 100;
+        ball.position.y = SCREEN_HEIGHT + 100;
+        ball.collider.x = ball.position.x + ball.dimension.x;
+        ball.collider.y = ball.position.y + ball.dimension.y;
     }
 }
 
@@ -852,7 +845,7 @@ void LandTile::render(){
 }
 
 LandTileGroup::LandTileGroup(float x , float y ){
- if (x == NULL || y == NULL){
+ if (x == 0 || y == 0){
    for (int i = 0; i <= SCREEN_WIDTH/landSprite.getWidth(); i++){
      container.emplace_back(landSprite.getWidth()*i, SCREEN_HEIGHT-landSprite.getHeight());
    }
@@ -946,7 +939,13 @@ void Ball::move()
 
 Ball::~Ball()
 {
+}
 
+Portal::Portal(){
+
+}
+
+Portal::~Portal(){
 }
 
 void levelOne(Player &player, SDL_Event &e){
@@ -1053,7 +1052,6 @@ int main( int argc, char* args[] )
 			//While application is running
 			while( !quit )
 			{
-        int level = 1;
         fps.start();
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) != 0 )
@@ -1065,7 +1063,14 @@ int main( int argc, char* args[] )
 					}
 				}
 
-        levelTwo(player, e);
+        if (player.nextLevel == false)
+        {
+          levelTwo(player, e);
+        }
+        else if (player.nextLevel == true)
+        {
+          levelOne(player, e);
+        }
 
 				//FPS Cap
 				if( fps.get_ticks() < 1000 / FPS ){
