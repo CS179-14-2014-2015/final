@@ -1,3 +1,22 @@
+# Pepero Lost in Time (Final Project)
+	
+##### Try to get home by chasing dragon balls :)
+
+## How to compile:
+1) The following libraries should be installed/linked:
+	- SDL2
+	- SDL2_img
+
+2) Use LLVM Clang with C++ 11 Support :)
+
+3) Compile and play :)
+
+## Directions:
+### Arrow Keys 
+   - UP to jump
+   - DOWN to go down a tile
+
+
 #Finals  (deadline: 2015-03-XX)
 
 Submit your finals here. Here are a couple of reminders:
