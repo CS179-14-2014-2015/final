@@ -16,7 +16,6 @@ SDL_Window* gWindow = NULL;
 //The window renderer
 SDL_Renderer* gRenderer = NULL;
 
-
 //Texture wrapper class from LazyFoo
 class LTexture{
 	public:
@@ -164,9 +163,9 @@ void Timer::stop(){
 
 void Timer::pause(){
     if( ( started == true ) && ( paused == false ) ){
-    paused = true;
-    pausedTicks = SDL_GetTicks() - startTicks;
-        }
+      paused = true;
+      pausedTicks = SDL_GetTicks() - startTicks;
+    }
 }
 
 void Timer::unpause(){
@@ -351,6 +350,7 @@ LTexture bg2Sprite;
 LTexture ballSprite;
 LTexture boulderSprite;
 LTexture portalSprite;
+LTexture gameOverText;
 
 const int PLAYER_ANIMATION_FRAMES = 6;
 SDL_Rect gSpriteClips[ PLAYER_ANIMATION_FRAMES ];
@@ -486,6 +486,12 @@ bool loadMedia(){
             ballSpriteClip[i].h = 32;
         }
     }
+
+    if (!gameOverText.loadFromFile("Assets/GameOver.png"))
+    {
+      printf("Failed to load game over text!\n");
+      success = false;
+    }
     return success;
 }
 
@@ -498,6 +504,7 @@ void close(){
  ballSprite.free();
  boulderSprite.free();
  portalSprite.free();
+ gameOverText.free();
 
 	//Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -583,7 +590,7 @@ class Player{
     ~Player();
     void update();
     void render();
-    void move(SDL_Event &e);
+    void control(SDL_Event &e);
     void LandTileCollision(LandTileGroup &landTiles);
     void boulderCollision(Boulder &);
     void ballCollision(Ball &);
@@ -591,16 +598,16 @@ class Player{
     int currentLevel = 1;
     bool portalOn = false;
 
-    Vector2D position;
+    Vector2D position, dimension;
 
   private:
-    Vector2D velocity,dimension;
+    Vector2D velocity;
 
     // Physics
     double Gravity = 2;
     double gCap = 4;
     double gVel = 0;
-    double jumpHeight = 80;
+    double jumpHeight = 50;
 
     // AABB
     SDL_Rect collider, result;
@@ -688,7 +695,7 @@ void Player::render(){
     playerSprite.render(position.x,position.y,currentClip);
 }
 
-void Player::move(SDL_Event &e){
+void Player::control (SDL_Event &e){
 
 //Movement Code here
   if (e.type == SDL_KEYDOWN)
@@ -904,8 +911,8 @@ void Player::portalCollision(Portal &portal){
     {
         portalOn = false;
         currentLevel += 1;
-        position.x = 100;
-        position.y = 50;
+        position.x = SCREEN_WIDTH/2 - dimension.x;
+        position.y = SCREEN_HEIGHT - 50;
     }
 }
 
@@ -1004,7 +1011,7 @@ void Ball::move()
     velX *= -1;
  }
   position.x += velX;
-  position.y = sin(0.08*(position.x) + 1)*50 + SCREEN_HEIGHT/3;
+  position.y = sin(0.08*(position.x) + 1)*50 + 50;
 
   collider.x = position.x + collider.r;
   collider.y = position.y + collider.r;
@@ -1021,7 +1028,7 @@ void Ball::moveBernoulli(){
        step *= -1;
 
     double x = 100 * pow(2, 0.5)  * cos(framestep) + SCREEN_WIDTH/2;
-    double y = 100 * pow(2, 0.5)  * sin(framestep) * cos(framestep) + SCREEN_HEIGHT/3;
+    double y = 100 * pow(2, 0.5)  * sin(framestep) * cos(framestep) + 75;
 
 
     position.x = x;
@@ -1062,7 +1069,7 @@ void levelTwo(Player &player, SDL_Event &e){
 
     if (randomLand.empty()){
       for (int i = 0; i < 4; i++)
-       randomLand.emplace_back(SCREEN_WIDTH + rand() % 300 , i * 60 + 32);
+       randomLand.emplace_back(SCREEN_WIDTH + rand() % 300 + i * 100, i * 60 + 32);
     }
 
     // Movement
@@ -1072,7 +1079,7 @@ void levelTwo(Player &player, SDL_Event &e){
     }
     player.position.x -= 1; // Level specific
     player.update();
-    player.move(e);
+    player.control(e);
     player.ballCollision(ball);
     player.portalCollision(portal);
 
@@ -1125,13 +1132,39 @@ void levelTwo(Player &player, SDL_Event &e){
 }
 
 void levelOne(Player &player, SDL_Event &e){
-  static LandTileGroup a(SCREEN_WIDTH-100,200);
+  static std::vector<LandTileGroup> land;
+  //static LandTileGroup a(SCREEN_WIDTH-100,100);
+  //static LandTileGroup b(SCREEN_WIDTH-200,50);
+  //static LandTileGroup c()
   static Ball ball;
   static Portal portal;
+
+  if (land.empty()){
+    for (int row = 0; row <= 2; row++)
+    {
+        int x;
+        for (int col = 0; col <= 8; col++)
+        {
+          if (row % 2 == 0)
+          {
+
+            x = (col + 1) * 125;
+          }
+          else if (row % 2 == 1)
+          {
+            x = col * 125;
+          }
+          land.emplace_back(x, row*75 + 50);
+        }
+    }
+  }
+
   player.update();
-  player.move(e);
+  player.control(e);
   ball.move();
-  player.LandTileCollision(a);
+    for (auto &tiles :land){
+      player.LandTileCollision(tiles);
+    }
   player.ballCollision(ball);
   player.portalCollision(portal);
 
@@ -1139,7 +1172,11 @@ void levelOne(Player &player, SDL_Event &e){
   SDL_RenderClear( gRenderer );
 
   bg2Sprite.render(0,0);
-  a.render();
+  for (auto &tiles : land){
+    tiles.render();
+
+  }
+
   ball.render();
   player.render();
 
@@ -1151,8 +1188,17 @@ void levelOne(Player &player, SDL_Event &e){
   SDL_RenderPresent(gRenderer);
 }
 
-void gameOver(){
+void gameOver(Player& player, SDL_Event& e){
+  static LandTileGroup land(0,0);
 
+	SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+  SDL_RenderClear( gRenderer );
+
+	bg1Sprite.render( 0, 0 );
+  land.render();
+  player.render();
+  gameOverText.render(SCREEN_WIDTH/2 - gameOverText.getWidth()/2, SCREEN_HEIGHT/2 - gameOverText.getHeight()/2);
+  SDL_RenderPresent(gRenderer);
 }
 
 int main( int argc, char* args[] )
@@ -1203,7 +1249,7 @@ int main( int argc, char* args[] )
           levelTwo(player, e);
           break;
          case 3:
-          gameOver();
+          gameOver(player, e);
           break;
         }
 
