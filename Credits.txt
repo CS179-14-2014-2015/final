@@ -1,0 +1,7 @@
+Credits:
+Thanks to:
+
+1.) MillionthVector for the enemy alien sprites. http://millionthvector.blogspot.com/p/free-sprites.html (resized, recolered and change file type to bmp from png)
+2.) prinz eugn(mark simpson) for the user/player fighter plane sprite. http://www.gamedev.net/topic/495808-free-airplane-sprite-pack/  (resized, recolered and changed file type to bmp from png)
+3.) code for the movement and rendering from lazyfoo http://lazyfoo.net/tutorials/SDL/27_collision_detection/index.php
+4.) http://image.online-convert.com/convert-to-bmp for converting the png sprites to files.
