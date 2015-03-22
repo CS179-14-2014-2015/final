@@ -1,0 +1,143 @@
+// reading a text file
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+class highScores{
+    public:
+        string name;
+        int score;
+        highScores(string playerName, int playerScore);
+};
+highScores::highScores(string playerName, int playerScore){
+    name = playerName;
+    score = playerScore;
+}
+
+bool sortByScore(const highScores &lhs,const highScores &rhs){
+    return lhs.score>rhs.score;
+}
+
+
+vector<string> data;
+vector<string> names;
+vector<string> strScore;
+vector<int> intScore;
+vector<highScores> highScore;
+
+
+int main () {
+    ifstream myfile_Read ("example1.txt");
+    ofstream myfile;
+    string line;
+    string delim = ",";
+    string playerName = "";
+    string playerScore = "";
+
+    int numScore = 0;
+    myfile.open ("example.txt");
+    if (myfile_Read.is_open())
+    {
+        while ( getline (myfile_Read,line) )
+        {
+          data.push_back(line);
+        }
+        myfile_Read.close();
+    }
+    else cout << "Unable to open file";
+    for(int i = 0; i<data.size(); i++){
+        playerName = data[i].substr(0,data[i].find(delim));
+        names.push_back(playerName);
+
+        playerScore = data[i].substr(data[i].find(delim)+1,data[i].find("\n"));
+        strScore.push_back(playerScore);
+    }
+    for(int i = 0; i<strScore.size();i++){
+        numScore = atoi(strScore[i].c_str());
+        intScore.push_back(numScore);
+    }
+    for(int i = 0; i<data.size();i++){
+        highScore.emplace_back(names[i],intScore[i]);
+    }
+    sort(highScore.begin(),highScore.end(),sortByScore);
+    for(int i = 0; i<data.size();i++){
+        myfile<<highScore[i].name+",";
+        myfile<<highScore[i].score;
+        myfile<<"\n";
+    }
+    for(int i = 0; i<data.size();i++){
+        cout<<highScore[i].name+" ";
+        cout<<highScore[i].score;
+        cout<<"\n";
+    }
+  return 0;
+}
+/*
+int main () {
+  string line;
+  ifstream myfile_Read ("example1.txt");
+  ofstream myfile;
+  myfile.open ("example.txt");
+  if (myfile_Read.is_open())
+  {
+    while ( getline (myfile_Read,line) )
+    {
+      strScores.push_back(line);
+    }
+    myfile_Read.close();
+  }
+  else cout << "Unable to open file";
+  for(int i = 0; i<strScores.size(); i++){
+    int num = atoi(strScores[i].c_str());
+    intScore.push_back(num);
+  }
+  sort(intScore.begin(), intScore.end());
+  for(int i = 0; i<intScore.size();i++){
+    cout<<intScore[i];
+    cout<<"\n";
+    myfile<<intScore[i];
+    myfile<<"\n";
+  }
+  return 0;
+}
+*/
+/*// sort() Example using arrays.
+// By Zereo 04/22/13
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
+
+const int SIZE = 7;
+
+int main()
+{
+    int intArray[SIZE] = {5, 3, 32, -1, 1, 104, 53};
+
+    //Now we call the sort function
+    sort(intArray, intArray + SIZE);
+
+    cout << "Sorted Array looks like this." << endl;
+    for (size_t i = 0; i != SIZE; ++i)
+        cout << intArray[i] << " ";
+
+    return 0;
+}*/
+
+/*// basic file operations
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+int main () {
+  ofstream myfile;
+  myfile.open ("example.txt");
+  for(int i = 0; i<=2; i++){
+    myfile << "Writing this to a file.\n";
+  }
+  myfile.close();
+  return 0;
+}*/
+
