@@ -5,6 +5,7 @@
 
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
+#include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/Audio.hpp>
 
@@ -19,10 +20,11 @@ using namespace std;
 const int WIDTH = 1200;
 const int HEIGHT = 350;
 const int FPS = 60;
+const float TFPS = 1/60.0f;
 const int FLOOR_WIDTH = WIDTH;
 const int FLOOR_HEIGHT = 30;
 const int P1_START_POSX = 40;
-const int P2_START_POSX = FLOOR_WIDTH - 60;
+const int P2_START_POSX = WIDTH - 60;
 const float PLAYER_W = 25;
 const float PLAYER_H = 50;
 const float PLAYER_VX = 3.5;
@@ -33,7 +35,8 @@ const float SWORD_ACC = 0.5;
 const double GRAV = 9.8/(FPS*1.0);
 
 sf::RenderWindow window(sf::VideoMode(WIDTH,HEIGHT), "Sorta Jousting");
-sf::Clock clock;
+sf::Clock gameClock;
+sf::Time startTime;
 sf::RectangleShape shape(sf::Vector2f(FLOOR_WIDTH,FLOOR_HEIGHT));
 
 //some references from http://www.gamefromscratch.com/page/Game-From-Scratch-CPP-Edition.aspx
@@ -45,6 +48,7 @@ protected:
 	sf::Texture txt;
 	string filename;
 	bool loaded;
+	bool cstatic;
 public:
 	Node() : loaded(false){}
 	virtual ~Node(){};
@@ -58,6 +62,7 @@ public:
 			loaded = false;
 		}else{
 			filename = fn;
+			txt.setSmooth(true);
 			spr.setTexture(txt);
 			loaded = true;
 		}
@@ -68,7 +73,9 @@ public:
 		}
 	}
 	virtual void update(float t){
-		setPos(getVel()*t/FPS);
+		if(loaded){
+			setPos(pos.x + vel.x*t/TFPS, pos.y + vel.y*t/TFPS);
+		}
 	}
 	virtual void setPos(float x, float y){
 		if(loaded){
@@ -82,6 +89,22 @@ public:
 			vel.x = x;
 			vel.y = y;
 		}
+	}
+	virtual float getHeight() const{
+		return spr.getScale().y;
+	}
+	virtual float getWidth() const{
+		return spr.getScale().x;
+	}
+	virtual sf::Rect<float> getBoundingRect() const{
+		sf::Vector2f size = spr.getScale();
+		
+		return sf::Rect<float>(
+			pos.x - size.x/2,
+			pos.y - size.y/2,
+			pos.x + size.x/2,
+			pos.y + size.y/2
+			);
 	}
 	virtual sf::Vector2f getVel(){
 		if(loaded){
@@ -103,7 +126,6 @@ public:
 class Player : public Node{
 public:
 	Player(){
-		vel = sf::Vector2f(3,3);
 		load("textures/player.png");
 		assert(isLoaded());
 		getSprite().setScale(PLAYER_W/256,PLAYER_H/512);
@@ -111,7 +133,7 @@ public:
 	};
 	~Player(){};
 
-	void draw(sf::RenderWindow &rw){
+	void draw(sf::RenderWindow& rw){
 		Node::draw(rw);
 	}
 };
@@ -123,10 +145,43 @@ public:
 		assert(isLoaded());
 		getSprite().setScale(WIDTH/512.0f,FLOOR_HEIGHT/512.0f);
 		setPos(0,HEIGHT - FLOOR_HEIGHT);
+		cstatic = true;
 	}
 	~Floor(){};
 
-	void draw(sf::RenderWindow &rw){
+	void draw(sf::RenderWindow& rw){
+		Node::draw(rw);
+	}
+};
+
+class Wall : public Node{
+public:
+	enum Wall_Type{
+		Top, Left, Right
+	};
+	Wall(){};
+	Wall(Wall_Type wt){
+		switch(wt){
+		case Top:
+			spr.setScale(WIDTH*1.0f,5.0f);
+			setPos(0,0);
+			break;
+		case Left:
+			spr.setScale(5.0f,HEIGHT*1.0f);
+			setPos(0,0);
+			break;
+		case Right:
+			spr.setScale(5.0f,HEIGHT*1.0f);
+			setPos(WIDTH-5.0f,0);
+			break;
+		default:
+			break;
+		}
+		cstatic = true;
+	};
+	~Wall(){};
+
+	void draw(sf::RenderWindow& rw){
 		Node::draw(rw);
 	}
 };
@@ -172,135 +227,49 @@ public:
 		}
 	}
 	void updateAll(){
-		map<sstring,Node*>::const_iterator itr = nodes.begin();
-		float timeDelta = window.GetFrameTime();
+		map<string,Node*>::const_iterator itr = nodes.begin();
+		float timeDelta = gameClock.getElapsedTime().asSeconds() - startTime.asSeconds();
 
 		while(itr != nodes.end()){
 			itr->second->update(timeDelta);
 			itr++;
 		}
 	}
+	void collideAll(){
+		map<string,Node*>::const_iterator objx = nodes.begin();
+		map<string,Node*>::const_iterator objy = nodes.begin();
+		objy++;
+		while(objx != nodes.end()){
+			if(objx == objy) continue;
+			while(objy != nodes.end()){
+				objy++;
+			}
+			objx++;
+		}
+	}
 };
 
 NodeManager nodeManager;
-
-/*
-struct player{
-	RectangleShape rect;
-	RectangleShape sword;
-	bool animatingDown; // for swords
-	bool animatingUp;// for swords
-	double vx,vy;
-	double cx,cy;
-	player(){
-		rect.setSize(Vector2f(PLAYER_W,PLAYER_H));
-		rect.setPosition(P1_START_POSX,HEIGHT - FLOOR_HEIGHT - PLAYER_H);
-		rect.setFillColor(Color::Blue);
-		sword.setSize(Vector2f(SWORD_W,SWORD_H));
-		sword.setPosition(P1_START_POSX,HEIGHT - FLOOR_HEIGHT - SWORD_INC);
-		rect.setPosition(P1_START_POSX,HEIGHT - FLOOR_HEIGHT - PLAYER_H);
-		sword.setFillColor(Color::Yellow);
-		animatingDown = animatingUp =false;
-		vx = PLAYER_VX;
-		vy = 0;
-	};
-	player(float cx, float cy){};
-
-};
-
-void moveSwordDown(player* p){
-	if(p->animatingDown)
-		return;
-	else{
-		p->sword.move(0,SWORD_INC);
-	}
-};
-
-void moveSwordUp(player* p){
-	if(p->animatingUp)
-		return;
-	else{
-		p->sword.move(0,-SWORD_INC);
-	}
-};
-
-player p1;
-player p2;
-
-void handleInput(){
-	if(Keyboard::isKeyPressed(Keyboard::W)){
-		//cout << "Player 1 Sword Up";
-		moveSwordUp(&p1);
-	}
-	if(Keyboard::isKeyPressed(Keyboard::A)){
-		//cout << "Player 1 Move Left";
-		p1.rect.move(-p1.vx,0);
-		p1.sword.move(-p1.vx,0);
-	}
-	if(Keyboard::isKeyPressed(Keyboard::S)){
-		//cout << "Player 1 Sword Down";
-		moveSwordDown(&p1);
-	}
-	if(Keyboard::isKeyPressed(Keyboard::D)){
-		//cout << "Player 1 Move Right";
-		p1.rect.move(p1.vx,0);
-		p1.sword.move(p1.vx,0);
-	}
-	if(Keyboard::isKeyPressed(Keyboard::F)){
-		//cout << "Player 1 Sword Thrust";
-		//animate thrust
-	}
-	if(Keyboard::isKeyPressed(Keyboard::G)){
-		//cout << "Player 1 Jump";
-		if(p1.rect.getPosition().y < HEIGHT - FLOOR_HEIGHT - PLAYER_H){
-		}
-		else{
-			p1.vy = -5;
-		}
-	}
-};
-
-void animate(){
-	if(p1.rect.getPosition().y <= HEIGHT - FLOOR_HEIGHT - PLAYER_H){
-		p1.vy += GRAV;
-		p1.rect.move(0,p1.vy);
-		p1.sword.move(0,p1.vy);
-	}
-
-};
-
-void collideWalls(){
-	if(p1.rect.getPosition().x <=0){
-		p1.rect.setPosition(0,p1.rect.getPosition().y);
-	};
-	if(p1.rect.getPosition().y > HEIGHT - FLOOR_HEIGHT - PLAYER_H){
-		p1.rect.setPosition(p1.rect.getPosition().x,HEIGHT - FLOOR_HEIGHT - PLAYER_H);
-		p1.vy = 0;
-	};
-	if(p1.rect.getPosition().x + PLAYER_W >= WIDTH){
-		p1.rect.setPosition( WIDTH - PLAYER_W , p1.rect.getPosition().y);
-	}
-
-};
-
-void collide(){
-	collideWalls();
-}
-
-*/
 
 void collision(){
 	
 }
 
 void input(){
-	if(Keyboard::isKeyPressed(Keyboard::A)){
-		//cout << "Player 1 Move Left";
-		nodeManager.get("Player")->setVel(-p1.vx,0);
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::A)){
+		nodeManager.get("Player")->setVel(-30,0);
+	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::D)){
+		nodeManager.get("Player")->setVel(30,0);
+	}else{
+		nodeManager.get("Player")->setVel(0,0);
 	}
-	if(Keyboard::isKeyPressed(Keyboard::D)){
-		//cout << "Player 1 Move Right";
-		nodeManager.get("Player")->setVel(p1.vx,0);
+
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
+		nodeManager.get("Player2")->setVel(-30,0);
+	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
+		nodeManager.get("Player2")->setVel(30,0);
+	}else{
+		nodeManager.get("Player2")->setVel(0,0);
 	}
 }
 
@@ -309,6 +278,7 @@ void animate(){
 }
 
 void logic(){
+	nodeManager.updateAll();
 	collision();
 }
 
@@ -319,6 +289,7 @@ void render(){
 }
 
 void gameLoop(){
+	startTime = gameClock.getElapsedTime();
 	input();
 	animate();
 	logic();
@@ -326,9 +297,14 @@ void gameLoop(){
 }
 
 void gameInit(){
+	nodeManager.add("WallTop",new Wall(Wall::Wall_Type::Top));
+	nodeManager.add("WallLeft",new Wall(Wall::Wall_Type::Left));
+	nodeManager.add("WallRight",new Wall(Wall::Wall_Type::Right));
 	nodeManager.add("Floor", new Floor());
 	nodeManager.add("Player",new Player());
+	nodeManager.add("Player2",new Player());
 	nodeManager.get("Player")->setPos(P1_START_POSX,HEIGHT-FLOOR_HEIGHT-PLAYER_H);
+	nodeManager.get("Player2")->setPos(P2_START_POSX,HEIGHT-FLOOR_HEIGHT-PLAYER_H);
 }
 
 void sysInit(){
@@ -356,3 +332,7 @@ int main()
     }
     return 0;
 }
+
+
+
+
