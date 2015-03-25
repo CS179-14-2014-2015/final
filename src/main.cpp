@@ -292,20 +292,25 @@ public:
 class Player : public Node{
 protected:
 	vector<Animation> anims;
+	vector<sf::Texture> txts;
 	AnimatedSprite spr;
 	Animation* currAnim;
+	bool face;
 public:
 	Player() : spr(sf::seconds(0.05),true,false) {
 		load("textures/idleplayer.png");
-
-		anims.push_back(*new Animation);
-		anims[0].setSpriteSheet(txt);
-		for(int i = 0; i < 30; i++){
-			anims[0].addFrame(sf::IntRect((i%5)*25,(i/5)*50,25,50));
+		load("textures/walkplayer.png");
+		for(int i = 0; i < 2; i++){
+			anims.push_back(*new Animation);
+			anims[i].setSpriteSheet(txts[i]);
+			for(int j = 0; j < 30; j++){
+				anims[i].addFrame(sf::IntRect((j%5)*25,(j/5)*50,25,50));
+			}
 		}
+
 		currAnim = &anims[0];
 		assert(isLoaded());
-		getSprite().setOrigin(getSprite().getScale().x/2, getSprite().getScale().y/2);
+		getAnimatedSprite().setOrigin(12.4998, 25);
 	};
 	~Player(){};
 
@@ -313,13 +318,21 @@ public:
 		if(loaded){
 			setPos(pos.x + vel.x*TFPS, pos.y + vel.y*TFPS);
 		}
+		//cout << getAnimatedSprite().getOrigin().x << " " << getAnimatedSprite().getOrigin().y << endl;
 		spr.play(*currAnim);
 		spr.update(frameTime);
+	}
+	void setAnim(int n){
+		if(n > anims.size()) return;
+		currAnim = &anims[n];
 	}
 	virtual void draw(sf::RenderWindow &rw){
 		if(loaded){
 			rw.draw(spr);
 		}
+	}
+	virtual AnimatedSprite& getAnimatedSprite(){
+		return spr;
 	}
 	virtual bool isLoaded() const{
 		return loaded;
@@ -332,6 +345,7 @@ public:
 			filename = fn;
 			txt.setSmooth(true);
 			loaded = true;
+			txts.push_back(txt);
 		}
 	}
 	
@@ -372,8 +386,8 @@ public:
 	virtual bool isColliding(Node* n){
 		sf::Rect<float> mine = getBoundingRect();
 		sf::Rect<float> other = n->getBoundingRect();
-		cout << "x : " << mine.left << " y: " << mine.top << " w: " << mine.width << " h: " << mine.height << endl;
-		cout << "x : " << other.left << " y: " << other.top << " w: " << other.width << " h: " << other.height << endl;
+		//cout << "x : " << mine.left << " y: " << mine.top << " w: " << mine.width << " h: " << mine.height << endl;
+		//cout << "x : " << other.left << " y: " << other.top << " w: " << other.width << " h: " << other.height << endl;
 		if(mine.intersects(other)){
 			return true;
 		}
@@ -527,18 +541,28 @@ void collision(){
 void input(){
 	if(sf::Keyboard::isKeyPressed(sf::Keyboard::A)){
 		nodeManager.get("Player")->setVel(-3,0);
+		((Player*)nodeManager.get("Player"))->getAnimatedSprite().setScale(-1,1);
+		((Player*)nodeManager.get("Player"))->setAnim(1);
 	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::D)){
 		nodeManager.get("Player")->setVel(3,0);
+		((Player*)nodeManager.get("Player"))->getAnimatedSprite().setScale(1,1);
+		((Player*)nodeManager.get("Player"))->setAnim(1);
 	}else{
 		nodeManager.get("Player")->setVel(0,0);
+		((Player*)nodeManager.get("Player"))->setAnim(0);
 	}
 
 	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
 		nodeManager.get("Player2")->setVel(-3,0);
+		((Player*)nodeManager.get("Player2"))->getAnimatedSprite().setScale(-1,1);
+		((Player*)nodeManager.get("Player2"))->setAnim(1);
 	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
 		nodeManager.get("Player2")->setVel(3,0);
+		((Player*)nodeManager.get("Player2"))->getAnimatedSprite().setScale(1,1);
+		((Player*)nodeManager.get("Player2"))->setAnim(1);
 	}else{
 		nodeManager.get("Player2")->setVel(0,0);
+		((Player*)nodeManager.get("Player2"))->setAnim(0);
 	}
 }
 
@@ -572,6 +596,7 @@ void gameInit(){
 	//nodeManager.add("Floor", new Floor());
 	nodeManager.add("Player",new Player());
 	nodeManager.add("Player2",new Player());
+	((Player*)nodeManager.get("Player2"))->getAnimatedSprite().setScale(-1,1);
 	nodeManager.get("Player")->setPos(P1_START_POSX,HEIGHT-FLOOR_HEIGHT-PLAYER_H);
 	nodeManager.get("Player2")->setPos(P2_START_POSX,HEIGHT-FLOOR_HEIGHT-PLAYER_H);
 }
