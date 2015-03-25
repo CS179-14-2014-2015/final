@@ -26,6 +26,8 @@ const int FLOOR_HEIGHT = 30;
 const int P1_START_POSX = 40;
 const int P2_START_POSX = WIDTH - 60;
 const int TILE_SIZE = 25;
+const int MAP_ROWS = HEIGHT/TILE_SIZE;
+const int MAP_COLUMNS = WIDTH/TILE_SIZE;
 const float PLAYER_W = 25;
 const float PLAYER_H = 50;
 const float PLAYER_VX = 3.5;
@@ -254,9 +256,7 @@ public:
 		return spr.getScale().x;
 	}
 	virtual sf::Rect<float> getBoundingRect() const{
-		sf::Vector2f size = spr.getScale();
-		
-		return sf::Rect<float>(pos, size);
+		return spr.getGlobalBounds();
 	}
 	virtual sf::Vector2f getVel(){
 		if(loaded){
@@ -274,12 +274,15 @@ public:
 		return spr;
 	}
 	virtual bool isColliding(Node* n){
-		//collision test here raffeh
-		//collision test here raffeh
-		//collision test here raffeh
+		sf::Rect<float> mine = getBoundingRect();
+		sf::Rect<float> other = n->getBoundingRect();
+		if(mine.intersects(other)){
+			return true;
+		}
 		return false;
 	}
 	virtual void collide(Node* n){
+		cout << "collide boy" << endl;
 		//collision reaction here raffeh
 		//collision reaction here raffeh
 		//collision reaction here raffeh
@@ -352,9 +355,7 @@ public:
 		return spr.getScale().x;
 	}
 	virtual sf::Rect<float> getBoundingRect() const{
-		sf::Vector2f size = spr.getScale();
-		
-		return sf::Rect<float>(pos, size);
+		return spr.getGlobalBounds();
 	}
 	virtual sf::Vector2f getVel(){
 		if(loaded){
@@ -369,15 +370,17 @@ public:
 		return sf::Vector2f();
 	}
 	virtual bool isColliding(Node* n){
-		//collision test here raffeh
-		//collision test here raffeh
-		//collision test here raffeh
+		sf::Rect<float> mine = getBoundingRect();
+		sf::Rect<float> other = n->getBoundingRect();
+		cout << "x : " << mine.left << " y: " << mine.top << " w: " << mine.width << " h: " << mine.height << endl;
+		cout << "x : " << other.left << " y: " << other.top << " w: " << other.width << " h: " << other.height << endl;
+		if(mine.intersects(other)){
+			return true;
+		}
 		return false;
 	}
 	virtual void collide(Node* n){
-		//collision reaction here raffeh
-		//collision reaction here raffeh
-		//collision reaction here raffeh
+		cout << "boy collide player" << endl;
 	}
 };
 
@@ -505,7 +508,9 @@ public:
 		while(objx != nodes.end()){
 			if(objx == objy) continue;
 			while(objy != nodes.end()){
-				if(objx->second->isColliding(objy->second)) objx->second->collide(objy->second);
+				if(objx->second->isColliding(objy->second)){
+					objx->second->collide(objy->second);
+				}
 				objy++;
 			}
 			objx++;
@@ -561,10 +566,10 @@ void gameLoop(){
 }
 
 void gameInit(){
-	nodeManager.add("WallTop",new Wall(Wall::Wall_Type::Top));
-	nodeManager.add("WallLeft",new Wall(Wall::Wall_Type::Left));
-	nodeManager.add("WallRight",new Wall(Wall::Wall_Type::Right));
-	nodeManager.add("Floor", new Floor());
+	//nodeManager.add("WallTop",new Wall(Wall::Wall_Type::Top));
+	//nodeManager.add("WallLeft",new Wall(Wall::Wall_Type::Left));
+	//nodeManager.add("WallRight",new Wall(Wall::Wall_Type::Right));
+	//nodeManager.add("Floor", new Floor());
 	nodeManager.add("Player",new Player());
 	nodeManager.add("Player2",new Player());
 	nodeManager.get("Player")->setPos(P1_START_POSX,HEIGHT-FLOOR_HEIGHT-PLAYER_H);
