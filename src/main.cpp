@@ -473,33 +473,37 @@ public:
 		sf::Rect<float> mine = getBoundingRect();
 		sf::Rect<float> other = n->getBoundingRect();
 		
-		if( other.left + other.width > mine.left){
+		if( (other.left + other.width) > mine.left && (other.top < mine.top)){
 			if(other.left < mine.left){
 				cout << "resolved 1" << endl;
 				n->setPos(other.left - other.width,n->getPos().y);
-				return;
+				other = n->getBoundingRect();
+				//return;
 			}
 		} 
 
-		if( other.left < mine.left + mine.width ){
+		if( other.left < mine.left + mine.width && (other.top < mine.top) ){
 			if(other.left + other.width > mine.left + mine.width){
 				cout << "resolved 2" << endl;
 				n->setPos(other.left + other.width,n->getPos().y);
-				return;
+				other = n->getBoundingRect();
+				//return;
 			}
 		}
 	
-		if( other.top < mine.top + mine.height){
+		if( other.top < mine.top + mine.height && (other.left + other.width > mine.left || other.left < mine.left + mine.width) ){
 			if(other.top + other.height > mine.top + mine.height){
+				cout << "resolved 3" <<endl;
 				n->setPos(n->getPos().x,mine.top + mine.height);
-				return;
+				other = n->getBoundingRect();
 			}
 		}
 
-		if((other.top + other.height > mine.top)){
+		if((other.top + other.height > mine.top) && (other.left + other.width > mine.left || other.left < mine.left + mine.width)){
 			if(other.top < mine.top){
+				cout << "resolved 4" << endl;
 				n->setPos(n->getPos().x,mine.top - other.height);
-				return;
+
 			}
 		}
 	}
