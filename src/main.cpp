@@ -18,13 +18,14 @@ using namespace std;
 //using namespace sf;
 
 const int WIDTH = 1200;
-const int HEIGHT = 350;
+const int HEIGHT = 400;
 const int FPS = 60;
-const float TFPS = 1/60.0f;
+const float TFPS = 100.0f/FPS;
 const int FLOOR_WIDTH = WIDTH;
 const int FLOOR_HEIGHT = 30;
 const int P1_START_POSX = 40;
 const int P2_START_POSX = WIDTH - 60;
+const int TILE_SIZE = 25;
 const float PLAYER_W = 25;
 const float PLAYER_H = 50;
 const float PLAYER_VX = 3.5;
@@ -72,9 +73,9 @@ public:
 			rw.draw(spr);
 		}
 	}
-	virtual void update(float t){
+	virtual void update(){
 		if(loaded){
-			setPos(pos.x + vel.x*t/TFPS, pos.y + vel.y*t/TFPS);
+			setPos(pos.x + vel.x*TFPS, pos.y + vel.y*TFPS);
 		}
 	}
 	virtual void setPos(float x, float y){
@@ -197,6 +198,26 @@ public:
 	}
 };
 
+class Tile : public Node{
+	Tile(){
+		//put tile stuff here uncomment 2 lines below if may texture na
+		//load("textures/floor.png");
+		//assert(isLoaded());
+	}
+	Tile(int x, int y){
+		pos.x = x;
+		pos.y = y;
+		//put tile stuff here uncomment 2 lines below if may texture na
+		//load("textures/floor.png");
+		//assert(isLoaded());
+	}
+	~Tile(){};
+	
+	void draw(sf::RenderWindow& rw){
+		Node::draw(rw);
+	}
+};
+
 class NodeManager{
 protected:
 	map<string, Node*> nodes;
@@ -240,10 +261,9 @@ public:
 	}
 	void updateAll(){
 		map<string,Node*>::const_iterator itr = nodes.begin();
-		float timeDelta = gameClock.getElapsedTime().asSeconds() - startTime.asSeconds();
 
 		while(itr != nodes.end()){
-			itr->second->update(timeDelta);
+			itr->second->update();
 			itr++;
 		}
 	}
@@ -270,17 +290,17 @@ void collision(){
 
 void input(){
 	if(sf::Keyboard::isKeyPressed(sf::Keyboard::A)){
-		nodeManager.get("Player")->setVel(-30,0);
+		nodeManager.get("Player")->setVel(-3,0);
 	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::D)){
-		nodeManager.get("Player")->setVel(30,0);
+		nodeManager.get("Player")->setVel(3,0);
 	}else{
 		nodeManager.get("Player")->setVel(0,0);
 	}
 
 	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
-		nodeManager.get("Player2")->setVel(-30,0);
+		nodeManager.get("Player2")->setVel(-3,0);
 	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
-		nodeManager.get("Player2")->setVel(30,0);
+		nodeManager.get("Player2")->setVel(3,0);
 	}else{
 		nodeManager.get("Player2")->setVel(0,0);
 	}
