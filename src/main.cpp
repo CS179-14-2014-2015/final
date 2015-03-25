@@ -348,9 +348,7 @@ public:
 		return spr.getScale().x;
 	}
 	virtual sf::Rect<float> getBoundingRect() const{
-		sf::Vector2f size = spr.getScale();
-		
-		return sf::Rect<float>(pos, size);
+		return spr.getGlobalBounds();
 	}
 	virtual sf::Vector2f getVel(){
 		if(loaded){
