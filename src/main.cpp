@@ -253,11 +253,6 @@ public:
 	virtual float getWidth() const{
 		return spr.getScale().x;
 	}
-	virtual sf::Rect<float> getBoundingRect() const{
-		sf::Vector2f size = spr.getScale();
-		
-		return sf::Rect<float>(pos, size);
-	}
 	virtual sf::Vector2f getVel(){
 		if(loaded){
 			return vel;
@@ -294,7 +289,6 @@ protected:
 public:
 	Player() : spr(sf::seconds(0.05),true,false) {
 		load("textures/idleplayer.png");
-
 		anims.push_back(*new Animation);
 		anims[0].setSpriteSheet(txt);
 		for(int i = 0; i < 30; i++){
@@ -302,7 +296,7 @@ public:
 		}
 		currAnim = &anims[0];
 		assert(isLoaded());
-		getSprite().setOrigin(getSprite().getScale().x/2, getSprite().getScale().y/2);
+		//getAnimatedSprite().setOrigin(getAnimatedSprite().getScale().x/2, getAnimatedSprite().getScale().y/2);
 	};
 	~Player(){};
 
@@ -331,7 +325,9 @@ public:
 			loaded = true;
 		}
 	}
-	
+	virtual AnimatedSprite& getAnimatedSprite(){
+		return spr;
+	}
 	virtual void setPos(float x, float y){
 		if(loaded){
 			pos.x = x;
