@@ -121,6 +121,17 @@ public:
 	virtual sf::Sprite& getSprite(){
 		return spr;
 	}
+	virtual bool isColliding(Node* n){
+		//collision test here raffeh
+		//collision test here raffeh
+		//collision test here raffeh
+		return false;
+	}
+	virtual void collide(Node* n){
+		//collision reaction here raffeh
+		//collision reaction here raffeh
+		//collision reaction here raffeh
+	}
 };
 
 class Player : public Node{
@@ -189,7 +200,8 @@ public:
 class NodeManager{
 protected:
 	map<string, Node*> nodes;
-	
+	map<Node*, Node*> colls;
+
 	struct nodeDeallocator{
 		void operator()(const pair<string, Node*> &p) const{
 			delete p.second;
@@ -242,6 +254,7 @@ public:
 		while(objx != nodes.end()){
 			if(objx == objy) continue;
 			while(objy != nodes.end()){
+				if(objx->second->isColliding(objy->second)) objx->second->collide(objy->second);
 				objy++;
 			}
 			objx++;
@@ -252,7 +265,7 @@ public:
 NodeManager nodeManager;
 
 void collision(){
-	
+	nodeManager.collideAll();
 }
 
 void input(){
