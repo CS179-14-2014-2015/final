@@ -30,6 +30,7 @@ const int PLAYER_H = 50;
 const float TFPS = 100.0f/FPS;
 const float PLAYER_VX = 3.5;
 const double GRAV = 9.8/(FPS*1.0);
+const double PI = 3.14159265359;
 //const int FLOOR_WIDTH = WIDTH;
 //const int FLOOR_HEIGHT = 30;
 //const float SWORD_INC = PLAYER_H/5;
@@ -416,23 +417,31 @@ public:
 		sf::Rect<float> mine = getBoundingRect();
 		sf::Rect<float> other = n->getBoundingRect();
 		sf::Rect<float> inter = sf::Rect<float>();
-		if(mine.intersects(other, inter)){
+		if(mine.intersects(other,inter)){
+	
 			cout<< getVel().x << " "<< getVel().y  << endl;
-			if(getPos().x > inter.left){
-				cout << "LEFT" << endl;
-				cout << "BOUNCE " << -(other.left + n->getWidth()) + inter.left - aspr.getOrigin().x/2 << endl;
-				getAnimatedSprite().move(-(other.left + n->getWidth()) + inter.left - aspr.getOrigin().x/2,0);
+			if(getPos().x  > inter.left && getVel().x > 0){
+				cout << "NUDGE LEFT" << endl;
+				getAnimatedSprite().move(-inter.width,0);
 				setVel(0,getVel().y);
-			}else{
-				cout << "RIGHT" << endl;
+			}else if( getVel().x < 0 ){
+				cout << "NUDGE RIGHT" << endl;
+				getAnimatedSprite().move(inter.width,0);
 				setVel(0,getVel().y);
 			} 
-			if(getPos().y > inter.top){
-				cout << "TOP" <<endl;
+			if(getPos().y > inter.top && getVel().y < 0){
+				cout << "NUDGE DOWN" <<endl;
+				getAnimatedSprite().move(0,inter.height);
 				setVel(getVel().x,0);
 			}else{
-				cout << "BOTTOM" << endl;
-				setVel(getVel().x,0);
+				cout << "NUDGE UP" << endl;
+				if(getVel().y == 0){
+					
+				}
+				if( getPos().y < inter.top + inter.height){
+					getAnimatedSprite().move(0,-inter.height);
+					setVel(getVel().x,0);
+				}
 			}
 		}
 	}
@@ -593,7 +602,13 @@ void input(){
 		nodeManager.get("Player")->setVel(PLAYER_VX,0);
 		nodeManager.get("Player")->getAnimatedSprite().setScale(1,1);
 		nodeManager.get("Player")->setAnim(1);
-	}else{
+	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::S)){
+		nodeManager.get("Player")->setVel(0,PLAYER_VX);
+	}
+	else if(sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
+		nodeManager.get("Player")->setVel(0,-PLAYER_VX);
+	}
+	else{
 		nodeManager.get("Player")->setVel(0,0);
 		nodeManager.get("Player")->setAnim(0);
 	}
@@ -649,15 +664,15 @@ void gameInit(){
 
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j <  MAP_COLUMNS - 1; j++){
-			//if(i == 0 || i == MAP_ROWS-1 || j == 0 || j == MAP_COLUMNS-2) map_grid[i][j] =1;
-			//else map_grid[i][j] = 0;
-			map_grid[i][j] = 0;
+			if(i == 0 || i == MAP_ROWS-1 || j == 0 || j == MAP_COLUMNS-2) map_grid[i][j] =1;
+			else map_grid[i][j] = 0;
+			//map_grid[i][j] = 0;
 		}
 	}
 	/*for(int i = 0; i < MAP_COLUMNS; i++){
 		map_grid[MAP_ROWS - 1][i] = 0;
 	}*/
-	map_grid[14][0]= 1;
+	map_grid[10][8]= 1;
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j < MAP_COLUMNS - 1; j++){
 			if(map_grid[i][j] == 1){
