@@ -231,7 +231,7 @@ TextureLoader tl;
 
 class Node{
 protected:
-	sf::Vector2f vel;
+	sf::Vector2f vel, acc;
 	sf::Sprite spr;
 	sf::Texture txt;
 	AnimatedSprite aspr;
@@ -240,6 +240,7 @@ protected:
 	bool loaded;
 	bool cstatic;
 	bool collided;
+	bool onGround;
 public:
 	Node() : loaded(false), collided(false){}
 	virtual ~Node(){};
@@ -257,12 +258,10 @@ public:
 		}
 	}
 	virtual void update(){
-		return;
+		vel += acc;
 	}
 	virtual void move(){
 		if(loaded && !collided){
-			//setPos(pos.x + vel.x*TFPS, pos.y + vel.y*TFPS);
-			//move()
 			spr.move(vel.x*TFPS, vel.y*TFPS);
 		}
 	}
@@ -277,6 +276,12 @@ public:
 			vel.y = y;
 		}
 	}
+	virtual void setAcc(float x, float y){
+		if(loaded){
+			acc.x = x;
+			acc.y = y;
+		}
+	}
 	virtual float getHeight() const{
 		return spr.getScale().y;
 	}
@@ -286,15 +291,21 @@ public:
 	virtual sf::Rect<float> getBoundingRect() const{
 		return spr.getGlobalBounds();
 	}
+	virtual sf::Vector2f getPos(){
+		if(loaded){
+			return spr.getPosition();
+		}
+		return sf::Vector2f();
+	}
 	virtual sf::Vector2f getVel(){
 		if(loaded){
 			return vel;
 		}
 		return sf::Vector2f();
 	}
-	virtual sf::Vector2f getPos(){
+	virtual sf::Vector2f getAcc(){
 		if(loaded){
-			return spr.getPosition();
+			return acc;
 		}
 		return sf::Vector2f();
 	}
@@ -342,9 +353,10 @@ public:
 			}
 		}
 		type = 1;
+		cstatic = false;
 		currAnim = &anims[0];
 		assert(isLoaded());
-		getAnimatedSprite().setOrigin(12.4998, 25);
+		getAnimatedSprite().setOrigin(12.5, 25);
 	};
 	~Player(){};
 
@@ -356,6 +368,7 @@ public:
 	}
 	void move(){
 		if(loaded && !collided && abs(getVel().x+getVel().y) > 0.0001){
+			cout << vel.x << " " << vel.y << endl;
 			aspr.move(vel.x*TFPS, vel.y*TFPS);
 		}
 	}
@@ -380,12 +393,6 @@ public:
 			aspr.setPosition(x,y);
 		}
 	}
-	virtual void setVel(float x, float y){
-		if(loaded){
-			vel.x = x;
-			vel.y = y;
-		}
-	}
 	virtual float getHeight() const{
 		return aspr.getScale().y;
 	}
@@ -395,12 +402,6 @@ public:
 	virtual sf::Rect<float> getBoundingRect() const{
 		return aspr.getGlobalBounds();
 	}
-	virtual sf::Vector2f getVel(){
-		if(loaded){
-			return vel;
-		}
-		return sf::Vector2f();
-	}
 	virtual sf::Vector2f getPos(){
 		if(loaded){
 			return aspr.getPosition();
@@ -409,36 +410,38 @@ public:
 	}
 	virtual bool isColliding(Node* n){
 		sf::Rect<float> mine = getBoundingRect();
-		mine.left += getVel().x + 0.0001;
-		mine.top += getVel().y + 0.0001;
+		mine.left += getVel().x;
+		mine.top += getVel().y;
 		sf::Rect<float> other = n->getBoundingRect();
 		if(mine.intersects(other)){
 			return true;
 		}
 		return false;
 	}
-
-	//RAFFEH PLS IMPLEMENT NUDGE TY 
 	virtual void collide(Node* n){
 		sf::Rect<float> mine = getBoundingRect();
 		sf::Rect<float> other = n->getBoundingRect();
 		sf::Rect<float> inter = sf::Rect<float>();
 		if(mine.intersects(other, inter)){
-			if(getPos().x > inter.left){
-				cout << "LEFT" << endl;
-				getAnimatedSprite().move((other.left + other.width) - inter.left,0);
-				setVel(0,getVel().y);
-			}else{
-				cout << "RIGHT" << endl;
-				getAnimatedSprite().move(other.left - (inter.left + inter.width),0);
-				setVel(0,getVel().y);
-			} 
 			if(getPos().y > inter.top){
 				cout << "TOP" <<endl;
+				getAnimatedSprite().move(0,(other.top + other.height) - inter.top);
 				setVel(getVel().x,0);
-			}else{
+			}else if(getPos().y <= inter.top){
 				cout << "BOTTOM" << endl;
+				getAnimatedSprite().move(0,other.top - (inter.top + inter.height));
 				setVel(getVel().x,0);
+			}
+			if(getPos().x > inter.left){
+				cout << "LEFT" << endl;
+				onGround = true;
+				getAnimatedSprite().move((other.left + other.width) - inter.left,0);
+				setVel(0,getVel().y);
+			}else if(getPos().x <= inter.left){
+				cout << "RIGHT" << endl;
+				onGround = true;
+				getAnimatedSprite().move(other.left - (inter.left + inter.width),0);
+				setVel(0,getVel().y);
 			}
 		}
 	}
@@ -451,46 +454,10 @@ public:
 		assert(isLoaded());
 		spr.setScale(TILE_SIZE/512.0,TILE_SIZE/512.0);
 		setPos(x,y);
-		//spr.setOrigin(12.5,12.51);
 	}
 	~Tile(){};
 
-	//RAFFEH PLS IMPLEMENT INELASTIC COLLISION BETWEEN ALL NODES
-	//NUDGE AND APPLY FORCE
-	//use getVel().move(x,y) to apply force depends on what side siya galing
-	//kasi need to implement gravity
-	void collide(Node* n){
-		 
-
-		//if( (other.left + other.width) > mine.left && (other.top < mine.top)){
-		//	if(other.left < mine.left){
-		//		cout << "resolved 1" << endl;
-		//		n->setPos(other.left - other.width,n->getPos().y);
-		//		other = n->getBoundingRect();
-		//		//return;
-		//	}
-		//}else if( other.left < mine.left + mine.width && (other.top < mine.top) ){
-		//	if(other.left + other.width > mine.left + mine.width){
-		//		cout << "resolved 2" << endl;
-		//		n->setPos(other.left + other.width,n->getPos().y);
-		//		other = n->getBoundingRect();
-		//		//return;
-		//	}
-		//}else if( other.top < mine.top + mine.height && (other.left + other.width > mine.left || other.left < mine.left + mine.width) ){
-		//	if(other.top + other.height > mine.top + mine.height){
-		//		cout << "resolved 3" <<endl;
-		//		n->setPos(n->getPos().x,mine.top + mine.height);
-		//		other = n->getBoundingRect();
-		//	}
-		//}else if((other.top + other.height > mine.top) && (other.left + other.width > mine.left || other.left < mine.left + mine.width)){
-		//	if(other.top < mine.top){
-		//		cout << "resolved 4" << endl;
-		//		n->setPos(n->getPos().x,mine.top - other.height);
-
-		//	}
-		//}
-	}
-
+	void collide(Node* n){}
 	void draw(sf::RenderWindow& rw){
 		Node::draw(rw);
 	}
@@ -601,6 +568,9 @@ void input(){
 		nodeManager.get("Player")->setVel(PLAYER_VX,0);
 		nodeManager.get("Player")->getAnimatedSprite().setScale(1,1);
 		nodeManager.get("Player")->setAnim(1);
+	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
+		nodeManager.get("Player")->setVel(0,-PLAYER_VX);
+		nodeManager.get("Player")->setAnim(0);
 	}else{
 		nodeManager.get("Player")->setVel(0,0);
 		nodeManager.get("Player")->setAnim(0);
@@ -657,17 +627,17 @@ void gameInit(){
 
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j <  MAP_COLUMNS - 1; j++){
-			//if(i == 0 || i == MAP_ROWS-1 || j == 0 || j == MAP_COLUMNS-2) map_grid[i][j] =1;
-			//else map_grid[i][j] = 0;
-			map_grid[i][j] = 0;
+			if(i == 0 || i == MAP_ROWS-1 || j == 0 || j == MAP_COLUMNS-2) map_grid[i][j] =1;
+			else map_grid[i][j] = 0;
+			//map_grid[i][j] = 0;
 		}
 	}
 	/*for(int i = 0; i < MAP_COLUMNS; i++){
 		map_grid[MAP_ROWS - 1][i] = 0;
-	}*/
+	}
 	map_grid[14][0]= 1;
 	map_grid[14][10]= 1;
-	map_grid[15][1]= 1;
+	map_grid[15][1]= 1;*/
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j < MAP_COLUMNS - 1; j++){
 			if(map_grid[i][j] == 1){
