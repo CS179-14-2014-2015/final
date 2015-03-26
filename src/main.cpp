@@ -318,6 +318,9 @@ public:
 		return false;
 	}
 	virtual void collide(Node* n){}; 
+	virtual void setCollided(bool c){
+		collided = c;
+	}
 };
 
 class Player : public Node{
@@ -353,8 +356,6 @@ public:
 	}
 	void move(){
 		if(loaded && !collided && abs(getVel().x+getVel().y) > 0.0001){
-			cout << "MOVED" << endl;
-			//setPos(pos.x + vel.x*TFPS, pos.y + vel.y*TFPS);
 			aspr.move(vel.x*TFPS, vel.y*TFPS);
 		}
 	}
@@ -412,10 +413,8 @@ public:
 		mine.top += getVel().y + 0.0001;
 		sf::Rect<float> other = n->getBoundingRect();
 		if(mine.intersects(other)){
-			collided = true;
 			return true;
 		}
-		collided = false;
 		return false;
 	}
 
@@ -425,11 +424,8 @@ public:
 		sf::Rect<float> other = n->getBoundingRect();
 		sf::Rect<float> inter = sf::Rect<float>();
 		if(mine.intersects(other, inter)){
-			cout<< mine.left << " "<<  other.left << endl;
 			if(getPos().x > inter.left){
-				//cout << "LEFT" << endl;
-				//cout << "BOUNCE " << other.width << endl;
-				
+				cout << "LEFT" << endl;
 				getAnimatedSprite().move((other.left + other.width) - inter.left,0);
 				setVel(0,getVel().y);
 			}else{
@@ -583,6 +579,7 @@ NodeManager nodeManager;
 void collideTiles(){
 	for(int i = 0; i < tiles.size(); i++){
 		if(nodeManager.get("Player")->isColliding(&tiles[i])){
+			nodeManager.get("Player")->setCollided(true);
 			//tiles[i].collide(nodeManager.get("Player"));
 			((Player*)nodeManager.get("Player"))->collide(&tiles[i]);
 		}
@@ -590,6 +587,7 @@ void collideTiles(){
 }
 
 void collision(){
+	nodeManager.get("Player")->setCollided(false);
 	collideTiles();
 	//nodeManager.collideAll();
 }
