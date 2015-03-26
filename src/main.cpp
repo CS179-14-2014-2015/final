@@ -27,6 +27,7 @@ const int MAP_COLUMNS = WIDTH/TILE_SIZE + 1;
 const int FPS = 60;
 const int PLAYER_W = 25;
 const int PLAYER_H = 50;
+const float RESPAWN_TIME = 5;
 const float PLAYER_VY = 4;
 const float PLAYER_VX = 3.5;
 const float TFPS = 100.0f/FPS;
@@ -37,6 +38,7 @@ int map_grid[MAP_ROWS][MAP_COLUMNS];
 
 sf::RenderWindow window(sf::VideoMode(WIDTH-1,HEIGHT-1), "Glorified Rekts");
 sf::Clock gameClock;
+sf::Clock frameClock;
 sf::Time frameTime;
 
 //some references from http://www.gamefromscratch.com/page/Game-From-Scratch-CPP-Edition.aspx
@@ -234,16 +236,22 @@ protected:
 	AnimatedSprite aspr;
 	string filename;
 	short type;
+	bool dead;
 	bool loaded;
 	bool cstatic;
 public:
-	Node() : loaded(false){}
+	Node() : loaded(false), dead(false){}
 	virtual ~Node(){};
 
 	virtual bool isLoaded() const{
 		return loaded;
 	}
-
+	virtual bool isDead(){
+		return dead;
+	}
+	virtual void setDead(bool x){
+		dead = x;
+	}
 	virtual void load(string fn){
 		spr.setTexture(*tl.getTexture(fn));
 		loaded = true;
@@ -388,11 +396,12 @@ public:
 		else
 			return -1;
 	}
-
+	void setFace(bool x){
+		face = x;
+	}
 	bool getFace(){
 		return face;
 	}
-
 	void setRecharge(int s){
 		recharge = s;
 	}
@@ -521,16 +530,16 @@ class Attack: public Node{
 
 protected:
 	short life; // for how long the attack animation is?? pls notice my punn
-	short source; //who attacked?
+	Node* source; //who attacked?
 public:
 
-	Attack(int x = 0, int y = 0, int attack = 1){
+	Attack(int x = 0, int y = 0, Node* src = NULL){
 		load("textures/floor.png");
 		assert(isLoaded());
 		setPos(x,y);
-		source = 1;
+		source = src;
 		type = 3;
-		life = 2 * FPS; // 2 seconds
+		life = 10; // yep 10 frames dood//0.5 * FPS; // 2 seconds
 		spr.setOrigin(12.5,12.5);
 	}
 
@@ -547,10 +556,15 @@ public:
 		Node::draw(rw);
 	}
 
+	Node* getSource(){
+		return source;
+	}
+
 };
 
 class NodeManager{
 protected:
+	sf::Clock respawnClock;
 	map<string, Node*> nodes;
 	vector<Node> tiles;
 	vector<Attack> attacks;
@@ -580,13 +594,18 @@ public:
 		if(results == nodes.end()) return NULL;
 		return results->second;
 	}
+	Player* getPlayer(string name){
+		map<string, Node*>::const_iterator results = nodes.find(name);
+		if(results == nodes.end()) return NULL;
+		return dynamic_cast<Player*>(results->second);
+	}
 	int getSize(){
 		return nodes.size();
 	}
 	void drawAll(sf::RenderWindow& rw){
 		map<string, Node*>::const_iterator itr = nodes.begin();
 		while(itr != nodes.end()){
-			itr->second->draw(rw);
+			if(!(itr->second->isDead()))itr->second->draw(rw);
 			itr++;
 		}
 		for(int i = 0; i < tiles.size(); i++){
@@ -602,8 +621,13 @@ public:
 		map<string,Node*>::const_iterator itr = nodes.begin();
 
 		while(itr != nodes.end()){
-			itr->second->update();
-			itr++;
+			if(itr->second->isDead() && respawnClock.getElapsedTime().asSeconds() > RESPAWN_TIME){
+				itr->second->setDead(false);
+				itr->second->setPos(WIDTH/2,HEIGHT-PLAYER_H/2.0-25);
+			}else{
+				itr->second->update();
+				itr++;
+			}
 		}
 		for(int i = 0; i < attacks.size(); i++){
 			if(attacks[i].decay()){
@@ -616,9 +640,8 @@ public:
 		map<string,Node*>::const_iterator objx = nodes.begin();
 		map<string,Node*>::const_iterator objy = nodes.begin();
 		while(objx != nodes.end()){
-			
 			//object to objet
-			objy = nodes.begin();
+			/*objy = nodes.begin();
 			objy++;
 			if(objx != objy){
 				while(objy != nodes.end()){
@@ -628,7 +651,7 @@ public:
 					}
 					objy++;
 				}
-			}
+			}*/
 			
 			//Object to tile
 			Node *p = objx->second;
@@ -651,10 +674,12 @@ public:
 				}
 			}
 
+			//Object to attacks
 			for(int i = 0; i < attacks.size(); i++){
+				if(attacks[i].getSource() == p) continue;
 				if(p->isColliding(&attacks[i],sf::Vector2i(1,1))){
-					cout << "take the damage!" << endl;
-					//hindi ko alam kung paano matrack kung kanino siya magpapakolide
+					p->setDead(true);
+					respawnClock.restart();
 				}
 			}
 			objx++;
@@ -665,7 +690,7 @@ public:
 		tiles.push_back(*new Tile(x,y));
 	}
 
-	void addAttack(int x, int y, int attack){
+	void addAttack(int x, int y, Node* attack){
 		attacks.push_back(*new Attack(x,y,attack));
 	}
 
@@ -694,8 +719,8 @@ void pollKey(sf::Keyboard::Key k){
 }
 
 void input(){
-	Node* p1 = nodeManager.get("Player");
-	Node* p2 = nodeManager.get("Player2");
+	Player* p1 = nodeManager.getPlayer("Player");
+	Player* p2 = nodeManager.getPlayer("Player2");
 	bool i1 = true;
 	bool i2 = true;
 	pollKey(sf::Keyboard::A);
@@ -707,77 +732,86 @@ void input(){
 	pollKey(sf::Keyboard::Up);
 	pollKey(sf::Keyboard::RControl);
 	
-	if(keys[sf::Keyboard::A]){
-		p1->setVel(-PLAYER_VX,p1->getVel().y);
-		p1->getAnimatedSprite().setScale(-1,1);
-		if(p1->getCol().y == 1) p1->setAnim(2);
-		else p1->setAnim(1);
-		i1 = false;
-	}
-	if(keys[sf::Keyboard::D]){
-		p1->setVel(PLAYER_VX,p1->getVel().y);
-		p1->getAnimatedSprite().setScale(1,1);
-		if(p1->getCol().y == 1) p1->setAnim(2);
-		else p1->setAnim(1);
-		i1 = false;
-	}
-	if(keys[sf::Keyboard::W]){
-		if(p1->getCol().y == 0)p1->setVel(p1->getVel().x,-PLAYER_VY);
-		p1->setAnim(2);
-		i1 = false;
-	}
-	if(keys[sf::Keyboard::G]){
-		if(p1->getFace()){
-			nodeManager.addAttack(p1->getPos().x + p1->getWidth(),p1->getPos().y,1);
+	if(!(p1->isDead())){
+		if(keys[sf::Keyboard::A]){
+			p1->setVel(-PLAYER_VX,p1->getVel().y);
+			p1->getAnimatedSprite().setScale(-1,1);
+			p1->setFace(false);
+			if(p1->getCol().y == 1) p1->setAnim(2);
+			else p1->setAnim(1);
+			i1 = false;
 		}
-		else{
-			nodeManager.addAttack(p1->getPos().x,p1->getPos().y,1);
+		if(keys[sf::Keyboard::D]){
+			p1->setVel(PLAYER_VX,p1->getVel().y);
+			p1->getAnimatedSprite().setScale(1,1);
+			p1->setFace(true);
+			if(p1->getCol().y == 1) p1->setAnim(2);
+			else p1->setAnim(1);
+			i1 = false;
 		}
-		cout << "player1 attack" << endl;
-		i1 = false;
-	}
-	if(i1){
-		if(!p1->getCol().y){
-			p1->setVel(0,0);
-			p1->setAnim(0);
+		if(keys[sf::Keyboard::W]){
+			if(p1->getCol().y == 0)p1->setVel(p1->getVel().x,-PLAYER_VY);
+			p1->setAnim(2);
+			i1 = false;
+		}
+		if(keys[sf::Keyboard::G]){
+			if(p1->getFace()){
+				nodeManager.addAttack(p1->getPos().x + p1->getWidth() + 1,p1->getPos().y,p1);
+			}
+			else{
+				nodeManager.addAttack(p1->getPos().x - p1->getWidth() -1,p1->getPos().y,p1);
+			}
+			cout << "player1 attack" << endl;
+			i1 = false;
+		}
+		if(i1){
+			if(!p1->getCol().y){
+				p1->setVel(0,0);
+				p1->setAnim(0);
+			}
 		}
 	}
 	
-	if(keys[sf::Keyboard::Left]){
-		p2->setVel(-PLAYER_VX,p2->getVel().y);
-		p2->getAnimatedSprite().setScale(-1,1);
-		if(p2->getCol().y == 1) p2->setAnim(2);
-		else p2->setAnim(1);
-		i2 = false;
-	}
-	if(keys[sf::Keyboard::Right]){
-		p2->setVel(PLAYER_VX,p2->getVel().y);
-		p2->getAnimatedSprite().setScale(1,1);
-		if(p2->getCol().y == 1) p2->setAnim(2);
-		else p2->setAnim(1);
-		i2 = false;
-	}
-	if(keys[sf::Keyboard::Up]){
-		if(p2->getCol().y == 0)p2->setVel(p2->getVel().x,-PLAYER_VY);
-		p2->setAnim(2);
-		i2 = false;
-	}
-	if(keys[sf::Keyboard::RControl]){
-		if(p2->getFace()){
-			nodeManager.addAttack(p2->getPos().x + p1->getWidth(),p2->getPos().y,2);
+	if(!(p2->isDead())){
+		if(keys[sf::Keyboard::Left]){
+			p2->setVel(-PLAYER_VX,p2->getVel().y);
+			p2->getAnimatedSprite().setScale(-1,1);
+			p2->setFace(false);
+			if(p2->getCol().y == 1) p2->setAnim(2);
+			else p2->setAnim(1);
+			i2 = false;
 		}
-		else{
-			nodeManager.addAttack(p2->getPos().x,p2->getPos().y,2);
+		if(keys[sf::Keyboard::Right]){
+			p2->setVel(PLAYER_VX,p2->getVel().y);
+			p2->getAnimatedSprite().setScale(1,1);
+			p2->setFace(true);
+			if(p2->getCol().y == 1) p2->setAnim(2);
+			else p2->setAnim(1);
+			i2 = false;
 		}
-		cout << "player 2 attack" << endl;
-		i2 = false;
-	}
-	if(i2){
-		if(!p2->getCol().y){
-			p2->setVel(0,0);
-			p2->setAnim(0);
+		if(keys[sf::Keyboard::Up]){
+			if(p2->getCol().y == 0)p2->setVel(p2->getVel().x,-PLAYER_VY);
+			p2->setAnim(2);
+			i2 = false;
+		}
+		if(keys[sf::Keyboard::RControl]){
+			if(p2->getFace()){
+				nodeManager.addAttack(p2->getPos().x + p2->getWidth() +1,p2->getPos().y,p2);
+			}
+			else{
+				nodeManager.addAttack(p2->getPos().x - p2->getWidth() -1,p2->getPos().y,p2);
+			}
+			cout << "player 2 attack" << endl;
+			i2 = false;
+		}
+		if(i2){
+			if(!p2->getCol().y){
+				p2->setVel(0,0);
+				p2->setAnim(0);
+			}
 		}
 	}
+	
 }
 
 void logic(){
@@ -793,7 +827,7 @@ void render(){
 }
 
 void gameLoop(){
-	frameTime = gameClock.restart();
+	frameTime = frameClock.restart();
 	input();
 	logic();
 	render();
