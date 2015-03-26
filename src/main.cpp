@@ -39,7 +39,7 @@ const double GRAV = 9.8/(FPS*1.0);
 
 int map_grid[MAP_ROWS][MAP_COLUMNS];
 
-sf::RenderWindow window(sf::VideoMode(WIDTH,HEIGHT), "Sorta Jousting");
+sf::RenderWindow window(sf::VideoMode(WIDTH-1,HEIGHT-1), "Sorta Jousting");
 sf::Clock gameClock;
 sf::Time frameTime;
 
@@ -358,7 +358,9 @@ public:
 		aspr = AnimatedSprite(sf::seconds(0.05f),true,false);
 		load("textures/idleplayer.png");
 		load("textures/walkplayer.png");
-		for(int i = 0; i < 2; i++){
+		load("textures/jumpplayer.png");
+
+		for(int i = 0; i < 3; i++){
 			anims.push_back(*new Animation);
 			anims[i].setSpriteSheet(txts[i]);
 			for(int j = 0; j < 30; j++){
@@ -366,6 +368,7 @@ public:
 			}
 		}
 		setCol(1,1);
+		setAcc(0,2);
 		type = 1;
 		cstatic = false;
 		currAnim = &anims[0];
@@ -376,14 +379,13 @@ public:
 
 	void update(){
 		if(loaded){
-			cout << getPos().x << " " << getPos().y << endl;
+			vel += acc;
 			aspr.play(*currAnim);
 			aspr.update(frameTime);
 		}
 	}
 	void move(){
 		if(loaded && abs(getVel().x+getVel().y) > 0.0001){
-			//cout << vel.x << " " << vel.y << endl;
 			aspr.move(col.x*vel.x*TFPS, col.y*vel.y*TFPS);
 		}
 	}
@@ -455,20 +457,16 @@ public:
 
 		if(mine.intersects(other, inter)){
 			if(getPos().y > inter.top){
-				cout << "TOP" <<endl;
 				getAnimatedSprite().move(0,axis.y*((other.top + other.height) - inter.top));
 				setVel(getVel().x,0);
 			}else if(getPos().y <= inter.top){
-				cout << "BOTTOM" << endl;
 				getAnimatedSprite().move(0,axis.y*(other.top - (inter.top + inter.height)));
 				setVel(getVel().x,0);
 			}
 			if(getPos().x > inter.left){
-				cout << "LEFT" << endl;
 				getAnimatedSprite().move(axis.x*((other.left + other.width) - inter.left),0);
 				setVel(0,getVel().y);
 			}else if(getPos().x <= inter.left){
-				cout << "RIGHT" << endl;
 				getAnimatedSprite().move(axis.x*(other.left - (inter.left + inter.width)),0);
 				setVel(0,getVel().y);
 			}
@@ -481,7 +479,6 @@ public:
 	Tile(int x = 0, int y = 0){
 		load("textures/floor.png");
 		assert(isLoaded());
-		//spr.setScale(TILE_SIZE/512.0,TILE_SIZE/512.0);
 		setPos(x,y);
 		spr.setOrigin(12.5,12.5);
 	}
@@ -580,40 +577,23 @@ void collideTiles(){
 	sf::Vector2f p_size = sf::Vector2f(p->getWidth(),p->getHeight());
 	for(int i = 0; i < tiles.size(); i++){
 		sf::Vector2f t_pos = tiles[i].getPos();
-		//sf::Vector2f axis;
-		//cout << p_size.x << " " << p_size.y << endl;
 		if(t_pos.x >= p_pos.x - p_size.x/2 && t_pos.x <= p_pos.x + p_size.x/2){
-			//cout << i << endl;
 			if(p->isColliding(&tiles[i], sf::Vector2i(0,1))){
-				cout << i << endl;
 				p->collide(&tiles[i], sf::Vector2i(0,1));
 				p->setCol(1,0);
 			}
-			//axis.move(1,0);
 		}
 		if(t_pos.y >= p_pos.y - p_size.y/2 && t_pos.y <= p_pos.y + p_size.y/2){
-			//cout << i << endl;
 			if(p->isColliding(&tiles[i], sf::Vector2i(1,0))){
-				cout << i << endl;
-				nodeManager.get("Player")->collide(&tiles[i], sf::Vector2i(1,0));
+				p->collide(&tiles[i], sf::Vector2i(1,0));
 				p->setCol(0,1);
 			}
-			//axis.move(0,1);
 		}
-
-		//if(tiles[i].getPos().x >= nodeManager.get("Player").getPos() && tiles[i].getPos().x <=)
-		//if(nodeManager.get("Player")->isColliding(&tiles[i])){
-		//	//nodeManager.get("Player")->setCollided(true);
-		//	//tiles[i].collide(nodeManager.get("Player"));
-		//	//((Player*)nodeManager.get("Player"))->collide(&tiles[i]);
-		//}
 	}
 }
 
 void collision(){
-	//nodeManager.get("Player")->setCollided(false);
 	collideTiles();
-	//nodeManager.collideAll();
 }
 
 void input(){
@@ -626,8 +606,8 @@ void input(){
 		nodeManager.get("Player")->getAnimatedSprite().setScale(1,1);
 		nodeManager.get("Player")->setAnim(1);
 	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
-		nodeManager.get("Player")->setVel(0,-PLAYER_VX);
-		nodeManager.get("Player")->setAnim(0);
+		if(nodeManager.get("Player")->getCol().y == 0)nodeManager.get("Player")->setVel(0,4*-PLAYER_VX);
+		nodeManager.get("Player")->setAnim(2);
 	}else{
 		nodeManager.get("Player")->setVel(0,0);
 		nodeManager.get("Player")->setAnim(0);
