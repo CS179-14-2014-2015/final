@@ -27,6 +27,7 @@ const int MAP_COLUMNS = WIDTH/TILE_SIZE + 1;
 const int FPS = 60;
 const int PLAYER_W = 25;
 const int PLAYER_H = 50;
+const int CHARGE_T = 20;
 const float RESPAWN_TIME = 5;
 const float PLAYER_VY = 4;
 const float PLAYER_VX = 3.5;
@@ -372,8 +373,9 @@ public:
 		load("textures/idleplayer.png");
 		load("textures/walkplayer.png");
 		load("textures/jumpplayer.png");
+		load("textures/attackplayer.png");
 		recharge = 0; //FOR ATTACKS
-		for(int i = 0; i < 3; i++){
+		for(int i = 0; i < 4; i++){
 			anims.push_back(*new Animation);
 			anims[i].setSpriteSheet(txts[i]);
 			for(int j = 0; j < 30; j++){
@@ -382,6 +384,7 @@ public:
 		}
 		setCol(1,1);
 		setAcc(0,GRAV);
+		recharge = 0;
 		type = 1;
 		cstatic = false;
 		currAnim = &anims[0];
@@ -534,7 +537,8 @@ protected:
 public:
 
 	Attack(int x = 0, int y = 0, Node* src = NULL){
-		load("textures/floor.png");
+		load("textures/pow.png");
+		//loaded = true;
 		assert(isLoaded());
 		setPos(x,y);
 		source = src;
@@ -690,8 +694,10 @@ public:
 		tiles.push_back(*new Tile(x,y));
 	}
 
-	void addAttack(int x, int y, Node* attack){
-		attacks.push_back(*new Attack(x,y,attack));
+	void addAttack(int x, int y, Node* attack, bool side){
+		Attack* temp = new Attack(x,y,attack);
+		if(!side) temp->getSprite().setScale(-1,1);
+		attacks.push_back(*(temp));
 	}
 
 	void moveAll(){
@@ -755,19 +761,25 @@ void input(){
 			i1 = false;
 		}
 		if(keys[sf::Keyboard::G]){
-			if(p1->getFace()){
-				nodeManager.addAttack(p1->getPos().x + p1->getWidth() + 1,p1->getPos().y,p1);
+			if(p1->getRecharge() == 0){
+				if(p1->getFace()){
+				nodeManager.addAttack(p1->getPos().x + p1->getWidth() + 1,p1->getPos().y,p1,true);
+				}
+				else{
+					nodeManager.addAttack(p1->getPos().x - p1->getWidth() -1,p1->getPos().y,p1,false);
+				}
+				cout << "player1 attack" << endl;
+				p1->setAnim(3);
+				i1 = false;
+				p1->setRecharge(CHARGE_T);
 			}
-			else{
-				nodeManager.addAttack(p1->getPos().x - p1->getWidth() -1,p1->getPos().y,p1);
-			}
-			cout << "player1 attack" << endl;
-			i1 = false;
 		}
 		if(i1){
 			if(!p1->getCol().y){
+				p1->decRecharge();
 				p1->setVel(0,0);
-				p1->setAnim(0);
+				if(p1->getRecharge() > 12) p1->setAnim(3);
+				else p1->setAnim(0);
 			}
 		}
 	}
@@ -795,19 +807,25 @@ void input(){
 			i2 = false;
 		}
 		if(keys[sf::Keyboard::RControl]){
-			if(p2->getFace()){
-				nodeManager.addAttack(p2->getPos().x + p2->getWidth() +1,p2->getPos().y,p2);
+			if(p2->getRecharge() == 0){
+				if(p2->getFace()){
+					nodeManager.addAttack(p2->getPos().x + p2->getWidth() +1,p2->getPos().y,p2,true);
+				}
+				else{
+					nodeManager.addAttack(p2->getPos().x - p2->getWidth() -1,p2->getPos().y,p2,false);
+				}
+				cout << "player 2 attack" << endl;
+				p2->setAnim(3);
+				i2 = false;
+				p2->setRecharge(CHARGE_T);
 			}
-			else{
-				nodeManager.addAttack(p2->getPos().x - p2->getWidth() -1,p2->getPos().y,p2);
-			}
-			cout << "player 2 attack" << endl;
-			i2 = false;
 		}
 		if(i2){
 			if(!p2->getCol().y){
+				p2->decRecharge();
 				p2->setVel(0,0);
-				p2->setAnim(0);
+				if(p2->getRecharge() > 12) p2->setAnim(3);
+				else p2->setAnim(0);
 			}
 		}
 	}
