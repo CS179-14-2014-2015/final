@@ -232,6 +232,7 @@ TextureLoader tl;
 class Node{
 protected:
 	sf::Vector2f vel, acc;
+	sf::Vector2i col;
 	sf::Sprite spr;
 	sf::Texture txt;
 	AnimatedSprite aspr;
@@ -239,10 +240,8 @@ protected:
 	short type;
 	bool loaded;
 	bool cstatic;
-	bool collided;
-	bool onGround;
 public:
-	Node() : loaded(false), collided(false){}
+	Node() : loaded(false){}
 	virtual ~Node(){};
 
 	virtual bool isLoaded() const{
@@ -258,12 +257,8 @@ public:
 		}
 	}
 	virtual void update(){
-		vel += acc;
 	}
 	virtual void move(){
-		if(loaded && !collided){
-			spr.move(vel.x*TFPS, vel.y*TFPS);
-		}
 	}
 	virtual void setPos(float x, float y){
 		if(loaded){
@@ -282,11 +277,17 @@ public:
 			acc.y = y;
 		}
 	}
+	virtual void setCol(int x, int y){
+		if(loaded){
+			col.x = x;
+			col.y = y;
+		}
+	}
 	virtual float getHeight() const{
-		return spr.getScale().y;
+		return spr.getGlobalBounds().height;
 	}
 	virtual float getWidth() const{
-		return spr.getScale().x;
+		return spr.getGlobalBounds().width;
 	}
 	virtual sf::Rect<float> getBoundingRect() const{
 		return spr.getGlobalBounds();
@@ -309,6 +310,12 @@ public:
 		}
 		return sf::Vector2f();
 	}
+	virtual sf::Vector2i getCol(){
+		if(loaded){
+			return col;
+		}
+		return sf::Vector2i();
+	}
 	virtual sf::Sprite& getSprite(){
 		return spr;
 	}
@@ -318,20 +325,26 @@ public:
 	virtual void setAnim(int n){
 		return;
 	}
-	virtual bool isColliding(Node* n){
+	virtual bool isColliding(Node* n, sf::Vector2i axis){
 		sf::Rect<float> mine = getBoundingRect();
 		sf::Rect<float> other = n->getBoundingRect();
+
+		//axis checking
+		mine.left *= axis.x;
+		mine.width *= axis.x;
+		mine.top *= axis.y;
+		mine.height *= axis.y;
+		other.left *= axis.x;
+		other.width *= axis.x;
+		other.top *= axis.y;
+		other.height *= axis.y;
+
 		if(mine.intersects(other)){
-			collided = true;
 			return true;
 		}
-		collided = false;
 		return false;
 	}
-	virtual void collide(Node* n){}; 
-	virtual void setCollided(bool c){
-		collided = c;
-	}
+	virtual void collide(Node* n, sf::Vector2i axis){};
 };
 
 class Player : public Node{
@@ -352,6 +365,7 @@ public:
 				anims[i].addFrame(sf::IntRect((j%5)*25,(j/5)*50,25,50));
 			}
 		}
+		setCol(1,1);
 		type = 1;
 		cstatic = false;
 		currAnim = &anims[0];
@@ -362,14 +376,15 @@ public:
 
 	void update(){
 		if(loaded){
+			cout << getPos().x << " " << getPos().y << endl;
 			aspr.play(*currAnim);
 			aspr.update(frameTime);
 		}
 	}
 	void move(){
-		if(loaded && !collided && abs(getVel().x+getVel().y) > 0.0001){
-			cout << vel.x << " " << vel.y << endl;
-			aspr.move(vel.x*TFPS, vel.y*TFPS);
+		if(loaded && abs(getVel().x+getVel().y) > 0.0001){
+			//cout << vel.x << " " << vel.y << endl;
+			aspr.move(col.x*vel.x*TFPS, col.y*vel.y*TFPS);
 		}
 	}
 	void setAnim(int n){
@@ -394,10 +409,10 @@ public:
 		}
 	}
 	virtual float getHeight() const{
-		return aspr.getScale().y;
+		return aspr.getGlobalBounds().height;
 	}
 	virtual float getWidth() const{
-		return aspr.getScale().x;
+		return aspr.getGlobalBounds().width;
 	}
 	virtual sf::Rect<float> getBoundingRect() const{
 		return aspr.getGlobalBounds();
@@ -408,39 +423,53 @@ public:
 		}
 		return sf::Vector2f();
 	}
-	virtual bool isColliding(Node* n){
+	virtual bool isColliding(Node* n, sf::Vector2i axis){
 		sf::Rect<float> mine = getBoundingRect();
+		sf::Rect<float> other = n->getBoundingRect();
+
+		//pre-collision
 		mine.left += getVel().x;
 		mine.top += getVel().y;
-		sf::Rect<float> other = n->getBoundingRect();
+
+		//axis checking
+		mine.left *= axis.x;
+		mine.top *= axis.y;
+		other.left *= axis.x;
+		other.top *= axis.y;
+
 		if(mine.intersects(other)){
 			return true;
 		}
 		return false;
 	}
-	virtual void collide(Node* n){
+	virtual void collide(Node* n, sf::Vector2i axis){
 		sf::Rect<float> mine = getBoundingRect();
 		sf::Rect<float> other = n->getBoundingRect();
 		sf::Rect<float> inter = sf::Rect<float>();
+
+		//axis checking
+		mine.left *= axis.x;
+		mine.top *= axis.y;
+		other.left *= axis.x;
+		other.top *= axis.y;
+
 		if(mine.intersects(other, inter)){
 			if(getPos().y > inter.top){
 				cout << "TOP" <<endl;
-				getAnimatedSprite().move(0,(other.top + other.height) - inter.top);
+				getAnimatedSprite().move(0,axis.y*((other.top + other.height) - inter.top));
 				setVel(getVel().x,0);
 			}else if(getPos().y <= inter.top){
 				cout << "BOTTOM" << endl;
-				getAnimatedSprite().move(0,other.top - (inter.top + inter.height));
+				getAnimatedSprite().move(0,axis.y*(other.top - (inter.top + inter.height)));
 				setVel(getVel().x,0);
 			}
 			if(getPos().x > inter.left){
 				cout << "LEFT" << endl;
-				onGround = true;
-				getAnimatedSprite().move((other.left + other.width) - inter.left,0);
+				getAnimatedSprite().move(axis.x*((other.left + other.width) - inter.left),0);
 				setVel(0,getVel().y);
 			}else if(getPos().x <= inter.left){
 				cout << "RIGHT" << endl;
-				onGround = true;
-				getAnimatedSprite().move(other.left - (inter.left + inter.width),0);
+				getAnimatedSprite().move(axis.x*(other.left - (inter.left + inter.width)),0);
 				setVel(0,getVel().y);
 			}
 		}
@@ -452,8 +481,9 @@ public:
 	Tile(int x = 0, int y = 0){
 		load("textures/floor.png");
 		assert(isLoaded());
-		spr.setScale(TILE_SIZE/512.0,TILE_SIZE/512.0);
+		//spr.setScale(TILE_SIZE/512.0,TILE_SIZE/512.0);
 		setPos(x,y);
+		spr.setOrigin(12.5,12.5);
 	}
 	~Tile(){};
 
@@ -515,7 +545,7 @@ public:
 			itr++;
 		}
 	}
-	void collideAll(){
+	/*void collideAll(){
 		map<string,Node*>::const_iterator objx = nodes.begin();
 		map<string,Node*>::const_iterator objy = nodes.begin();
 		objy++;
@@ -529,7 +559,7 @@ public:
 			}
 			objx++;
 		}
-	}
+	}*/
 
 	void moveAll(){
 		map<string,Node*>::const_iterator itr = nodes.begin();
@@ -544,17 +574,44 @@ public:
 NodeManager nodeManager;
 
 void collideTiles(){
+	Node* p = nodeManager.get("Player");
+	p->setCol(1,1);
+	sf::Vector2f p_pos = p->getPos();
+	sf::Vector2f p_size = sf::Vector2f(p->getWidth(),p->getHeight());
 	for(int i = 0; i < tiles.size(); i++){
-		if(nodeManager.get("Player")->isColliding(&tiles[i])){
-			nodeManager.get("Player")->setCollided(true);
-			//tiles[i].collide(nodeManager.get("Player"));
-			((Player*)nodeManager.get("Player"))->collide(&tiles[i]);
+		sf::Vector2f t_pos = tiles[i].getPos();
+		//sf::Vector2f axis;
+		//cout << p_size.x << " " << p_size.y << endl;
+		if(t_pos.x >= p_pos.x - p_size.x/2 && t_pos.x <= p_pos.x + p_size.x/2){
+			//cout << i << endl;
+			if(p->isColliding(&tiles[i], sf::Vector2i(0,1))){
+				cout << i << endl;
+				p->collide(&tiles[i], sf::Vector2i(0,1));
+				p->setCol(1,0);
+			}
+			//axis.move(1,0);
 		}
+		if(t_pos.y >= p_pos.y - p_size.y/2 && t_pos.y <= p_pos.y + p_size.y/2){
+			//cout << i << endl;
+			if(p->isColliding(&tiles[i], sf::Vector2i(1,0))){
+				cout << i << endl;
+				nodeManager.get("Player")->collide(&tiles[i], sf::Vector2i(1,0));
+				p->setCol(0,1);
+			}
+			//axis.move(0,1);
+		}
+
+		//if(tiles[i].getPos().x >= nodeManager.get("Player").getPos() && tiles[i].getPos().x <=)
+		//if(nodeManager.get("Player")->isColliding(&tiles[i])){
+		//	//nodeManager.get("Player")->setCollided(true);
+		//	//tiles[i].collide(nodeManager.get("Player"));
+		//	//((Player*)nodeManager.get("Player"))->collide(&tiles[i]);
+		//}
 	}
 }
 
 void collision(){
-	nodeManager.get("Player")->setCollided(false);
+	//nodeManager.get("Player")->setCollided(false);
 	collideTiles();
 	//nodeManager.collideAll();
 }
@@ -622,8 +679,8 @@ void gameInit(){
 	nodeManager.add("Player",new Player());
 	nodeManager.add("Player2",new Player());
 	nodeManager.get("Player2")->getAnimatedSprite().setScale(-1,1);
-	nodeManager.get("Player")->setPos(P1_START_POSX,HEIGHT-PLAYER_H/2.0);
-	nodeManager.get("Player2")->setPos(P2_START_POSX,HEIGHT-PLAYER_H/2.0);
+	nodeManager.get("Player")->setPos(P1_START_POSX,HEIGHT-PLAYER_H/2.0-25);
+	nodeManager.get("Player2")->setPos(P2_START_POSX,HEIGHT-PLAYER_H/2.0-25);
 
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j <  MAP_COLUMNS - 1; j++){
@@ -642,7 +699,7 @@ void gameInit(){
 		for(int j = 0; j < MAP_COLUMNS - 1; j++){
 			if(map_grid[i][j] == 1){
 				cout << i*TILE_SIZE << " " << j*TILE_SIZE << endl;
-				tiles.push_back(*new Tile(j*TILE_SIZE,i*TILE_SIZE));
+				tiles.push_back(*new Tile(12.5+j*TILE_SIZE,12.5+i*TILE_SIZE));
 			}
 			else{
 				//nothing
