@@ -598,6 +598,7 @@ void collideTiles(){
 
 	Node* p2 = nodeManager.get("Player2"); 
 	p_pos = p2->getPos();
+	p2->setCol(1,1);
 	p_size = sf::Vector2f(p2->getWidth(),p2->getHeight());
 	for(int i = 0; i < tiles.size(); i++){
 		sf::Vector2f t_pos = tiles[i].getPos();
