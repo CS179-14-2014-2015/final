@@ -31,16 +31,11 @@ const float PLAYER_VY = 4;
 const float PLAYER_VX = 3.5;
 const float TFPS = 100.0f/FPS;
 const float GRAV = 9.8*TFPS/100;
-//const int FLOOR_WIDTH = WIDTH;
-//const int FLOOR_HEIGHT = 30;
-//const float SWORD_INC = PLAYER_H/5;
-//const float SWORD_W = 50;
-//const float SWORD_H = 5;
-//const float SWORD_ACC = 0.5;
+
 
 int map_grid[MAP_ROWS][MAP_COLUMNS];
 
-sf::RenderWindow window(sf::VideoMode(WIDTH-1,HEIGHT-1), "Sorta Jousting");
+sf::RenderWindow window(sf::VideoMode(WIDTH-1,HEIGHT-1), "Glorified Rekts");
 sf::Clock gameClock;
 sf::Time frameTime;
 
@@ -248,6 +243,7 @@ public:
 	virtual bool isLoaded() const{
 		return loaded;
 	}
+
 	virtual void load(string fn){
 		spr.setTexture(*tl.getTexture(fn));
 		loaded = true;
@@ -352,6 +348,7 @@ public:
 		return false;
 	}
 	virtual void collide(Node* n, sf::Vector2i axis){};
+	virtual bool getFace(){return true;}
 };
 
 class Player : public Node{
@@ -360,13 +357,14 @@ protected:
 	vector<sf::Texture> txts;
 	Animation* currAnim;
 	bool face;
+	short recharge;
 public:
 	Player(){
 		aspr = AnimatedSprite(sf::seconds(0.05f),true,false);
 		load("textures/idleplayer.png");
 		load("textures/walkplayer.png");
 		load("textures/jumpplayer.png");
-
+		recharge = 0; //FOR ATTACKS
 		for(int i = 0; i < 3; i++){
 			anims.push_back(*new Animation);
 			anims[i].setSpriteSheet(txts[i]);
@@ -383,6 +381,25 @@ public:
 		getAnimatedSprite().setOrigin(12.5, 25);
 	};
 	~Player(){};
+	
+	short getRecharge(){
+		if(loaded)
+			return recharge;
+		else
+			return -1;
+	}
+
+	bool getFace(){
+		return face;
+	}
+
+	void setRecharge(int s){
+		recharge = s;
+	}
+
+	void decRecharge(){
+		if(recharge > 0) recharge--;
+	}
 
 	void update(){
 		if(loaded){
@@ -500,11 +517,43 @@ public:
 	}
 };
 
+class Attack: public Node{
+
+protected:
+	short life; // for how long the attack animation is?? pls notice my punn
+	short source; //who attacked?
+public:
+
+	Attack(int x = 0, int y = 0, int attack = 1){
+		load("textures/floor.png");
+		assert(isLoaded());
+		setPos(x,y);
+		source = 1;
+		type = 3;
+		life = 2 * FPS; // 2 seconds
+		spr.setOrigin(12.5,12.5);
+	}
+
+	~Attack(){}
+	
+	void collide(Node* n){
+	}
+
+	bool decay(){
+		return --life < 0;
+	}
+	
+	void draw(sf::RenderWindow& rw){
+		Node::draw(rw);
+	}
+
+};
+
 class NodeManager{
 protected:
 	map<string, Node*> nodes;
 	vector<Node> tiles;
-
+	vector<Attack> attacks;
 	struct nodeDeallocator{
 		void operator()(const pair<string, Node*> &p) const{
 			delete p.second;
@@ -543,6 +592,11 @@ public:
 		for(int i = 0; i < tiles.size(); i++){
 			tiles[i].draw(window);
 		}
+
+		for(int i = 0; i < attacks.size(); i++){
+			attacks[i].draw(window);
+		}
+
 	}
 	void updateAll(){
 		map<string,Node*>::const_iterator itr = nodes.begin();
@@ -550,6 +604,12 @@ public:
 		while(itr != nodes.end()){
 			itr->second->update();
 			itr++;
+		}
+		for(int i = 0; i < attacks.size(); i++){
+			if(attacks[i].decay()){
+
+				attacks.erase(attacks.begin() + i);
+			}
 		}
 	}
 	void collideAll(){
@@ -570,7 +630,7 @@ public:
 				}
 			}
 			
-			//axis test
+			//Object to tile
 			Node *p = objx->second;
 			p->setCol(1,1);
 			sf::Vector2f p_pos = p->getPos();
@@ -590,12 +650,23 @@ public:
 					}
 				}
 			}
+
+			for(int i = 0; i < attacks.size(); i++){
+				if(p->isColliding(&attacks[i],sf::Vector2i(1,1))){
+					cout << "take the damage!" << endl;
+					//hindi ko alam kung paano matrack kung kanino siya magpapakolide
+				}
+			}
 			objx++;
 		}
 	}
 
 	void addTile(int x, int y){
 		tiles.push_back(*new Tile(x,y));
+	}
+
+	void addAttack(int x, int y, int attack){
+		attacks.push_back(*new Attack(x,y,attack));
 	}
 
 	void moveAll(){
@@ -630,9 +701,11 @@ void input(){
 	pollKey(sf::Keyboard::A);
 	pollKey(sf::Keyboard::D);
 	pollKey(sf::Keyboard::W);
+	pollKey(sf::Keyboard::G);
 	pollKey(sf::Keyboard::Left);
 	pollKey(sf::Keyboard::Right);
 	pollKey(sf::Keyboard::Up);
+	pollKey(sf::Keyboard::RControl);
 	
 	if(keys[sf::Keyboard::A]){
 		p1->setVel(-PLAYER_VX,p1->getVel().y);
@@ -651,6 +724,16 @@ void input(){
 	if(keys[sf::Keyboard::W]){
 		if(p1->getCol().y == 0)p1->setVel(p1->getVel().x,-PLAYER_VY);
 		p1->setAnim(2);
+		i1 = false;
+	}
+	if(keys[sf::Keyboard::G]){
+		if(p1->getFace()){
+			nodeManager.addAttack(p1->getPos().x + p1->getWidth(),p1->getPos().y,1);
+		}
+		else{
+			nodeManager.addAttack(p1->getPos().x,p1->getPos().y,1);
+		}
+		cout << "player1 attack" << endl;
 		i1 = false;
 	}
 	if(i1){
@@ -677,6 +760,16 @@ void input(){
 	if(keys[sf::Keyboard::Up]){
 		if(p2->getCol().y == 0)p2->setVel(p2->getVel().x,-PLAYER_VY);
 		p2->setAnim(2);
+		i2 = false;
+	}
+	if(keys[sf::Keyboard::RControl]){
+		if(p2->getFace()){
+			nodeManager.addAttack(p2->getPos().x + p1->getWidth(),p2->getPos().y,2);
+		}
+		else{
+			nodeManager.addAttack(p2->getPos().x,p2->getPos().y,2);
+		}
+		cout << "player 2 attack" << endl;
 		i2 = false;
 	}
 	if(i2){
