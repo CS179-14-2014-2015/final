@@ -622,41 +622,79 @@ void collision(){
 	collideTiles();
 }
 
+vector<bool> keys;
+
+void pollKey(sf::Keyboard::Key k){
+	if(sf::Keyboard::isKeyPressed(k)){
+		keys[k] = true;
+	}else keys[k] = false;
+}
+
 void input(){
-	if(sf::Keyboard::isKeyPressed(sf::Keyboard::A)){
-		nodeManager.get("Player")->setVel(-PLAYER_VX,nodeManager.get("Player")->getVel().y);
-		nodeManager.get("Player")->getAnimatedSprite().setScale(-1,1);
-		nodeManager.get("Player")->setAnim(1);
-	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::D)){
-		nodeManager.get("Player")->setVel(PLAYER_VX,nodeManager.get("Player")->getVel().y);
-		nodeManager.get("Player")->getAnimatedSprite().setScale(1,1);
-		nodeManager.get("Player")->setAnim(1);
-	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
-		if(nodeManager.get("Player")->getCol().y == 0)nodeManager.get("Player")->setVel(nodeManager.get("Player")->getVel().x,-PLAYER_VY);
-		nodeManager.get("Player")->setAnim(2);
-	}else{
-		if(!nodeManager.get("Player")->getCol().y){
-			nodeManager.get("Player")->setVel(0,0);
+	Node* p1 = nodeManager.get("Player");
+	Node* p2 = nodeManager.get("Player2");
+	bool i1 = true;
+	bool i2 = true;
+	pollKey(sf::Keyboard::A);
+	pollKey(sf::Keyboard::D);
+	pollKey(sf::Keyboard::W);
+	pollKey(sf::Keyboard::Left);
+	pollKey(sf::Keyboard::Right);
+	pollKey(sf::Keyboard::Up);
+	//cout << keys.size() << endl;
+	
+	
+	if(keys[sf::Keyboard::A]){
+		p1->setVel(-PLAYER_VX,p1->getVel().y);
+		p1->getAnimatedSprite().setScale(-1,1);
+		if(p1->getCol().y == 1) p1->setAnim(2);
+		else p1->setAnim(1);
+		i1 = false;
+	}
+	if(keys[sf::Keyboard::D]){
+		p1->setVel(PLAYER_VX,p1->getVel().y);
+		p1->getAnimatedSprite().setScale(1,1);
+		if(p1->getCol().y == 1) p1->setAnim(2);
+		else p1->setAnim(1);
+		i1 = false;
+	}
+	if(keys[sf::Keyboard::W]){
+		if(p1->getCol().y == 0)p1->setVel(p1->getVel().x,-PLAYER_VY);
+		p1->setAnim(2);
+		i1 = false;
+	}
+	if(i1){
+		if(!p1->getCol().y){
+			p1->setVel(0,0);
+			p1->setAnim(0);
 		}
-		nodeManager.get("Player")->setAnim(0);
 	}
 
-	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
-		nodeManager.get("Player2")->setVel(-PLAYER_VX,nodeManager.get("Player2")->getVel().y);
-		nodeManager.get("Player2")->getAnimatedSprite().setScale(-1,1);
-		nodeManager.get("Player2")->setAnim(1);
-	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
-		nodeManager.get("Player2")->setVel(PLAYER_VX,nodeManager.get("Player2")->getVel().y);
-		nodeManager.get("Player2")->getAnimatedSprite().setScale(1,1);
-		nodeManager.get("Player2")->setAnim(1);
-	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)){
-		if(nodeManager.get("Player2")->getCol().y == 0)nodeManager.get("Player2")->setVel(nodeManager.get("Player2")->getVel().x,-PLAYER_VY);
-		nodeManager.get("Player2")->setAnim(2);
-	}else{
-		if(!nodeManager.get("Player2")->getCol().y){
-			nodeManager.get("Player2")->setVel(0,0);
+	
+	if(keys[sf::Keyboard::Left]){
+		p2->setVel(-PLAYER_VX,p2->getVel().y);
+		p2->getAnimatedSprite().setScale(-1,1);
+		if(p2->getCol().y == 1) p2->setAnim(2);
+		else p2->setAnim(1);
+		i2 = false;
+	}
+	if(keys[sf::Keyboard::Right]){
+		p2->setVel(PLAYER_VX,p2->getVel().y);
+		p2->getAnimatedSprite().setScale(1,1);
+		if(p2->getCol().y == 1) p2->setAnim(2);
+		else p2->setAnim(1);
+		i2 = false;
+	}
+	if(keys[sf::Keyboard::Up]){
+		if(p2->getCol().y == 0)p2->setVel(p2->getVel().x,-PLAYER_VY);
+		p2->setAnim(2);
+		i2 = false;
+	}
+	if(i2){
+		if(!p2->getCol().y){
+			p2->setVel(0,0);
+			p2->setAnim(0);
 		}
-		nodeManager.get("Player2")->setAnim(0);
 	}
 }
 
@@ -688,6 +726,9 @@ void gameLoop(){
 }
 
 void gameInit(){
+	for(int i = 0 ; i < sf::Keyboard::KeyCount; i++){
+		keys.push_back(false);
+	};
 
 	nodeManager.add("Player",new Player());
 	nodeManager.add("Player2",new Player());
