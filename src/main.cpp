@@ -25,6 +25,7 @@ const int TILE_SIZE = 25;
 const int MAP_ROWS = HEIGHT/TILE_SIZE;
 const int MAP_COLUMNS = WIDTH/TILE_SIZE + 1;
 const int FPS = 60;
+const float PLAYER_VY = 5;
 const int PLAYER_W = 25;
 const int PLAYER_H = 50;
 const float TFPS = 100.0f/FPS;
@@ -368,7 +369,7 @@ public:
 			}
 		}
 		setCol(1,1);
-		setAcc(0,2);
+		setAcc(0,GRAV);
 		type = 1;
 		cstatic = false;
 		currAnim = &anims[0];
@@ -379,13 +380,16 @@ public:
 
 	void update(){
 		if(loaded){
-			vel += acc;
+			if(col.y){
+				vel+= acc;
+			}
 			aspr.play(*currAnim);
 			aspr.update(frameTime);
 		}
 	}
 	void move(){
 		if(loaded && abs(getVel().x+getVel().y) > 0.0001){
+
 			aspr.move(col.x*vel.x*TFPS, col.y*vel.y*TFPS);
 		}
 	}
@@ -598,18 +602,20 @@ void collision(){
 
 void input(){
 	if(sf::Keyboard::isKeyPressed(sf::Keyboard::A)){
-		nodeManager.get("Player")->setVel(-PLAYER_VX,0);
+		nodeManager.get("Player")->setVel(-PLAYER_VX,nodeManager.get("Player")->getVel().y);
 		nodeManager.get("Player")->getAnimatedSprite().setScale(-1,1);
 		nodeManager.get("Player")->setAnim(1);
 	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::D)){
-		nodeManager.get("Player")->setVel(PLAYER_VX,0);
+		nodeManager.get("Player")->setVel(PLAYER_VX,nodeManager.get("Player")->getVel().y);
 		nodeManager.get("Player")->getAnimatedSprite().setScale(1,1);
 		nodeManager.get("Player")->setAnim(1);
 	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
-		if(nodeManager.get("Player")->getCol().y == 0)nodeManager.get("Player")->setVel(0,4*-PLAYER_VX);
+		if(nodeManager.get("Player")->getCol().y == 0)nodeManager.get("Player")->setVel(nodeManager.get("Player")->getVel().x,-PLAYER_VY);
 		nodeManager.get("Player")->setAnim(2);
 	}else{
-		nodeManager.get("Player")->setVel(0,0);
+		if(!nodeManager.get("Player")->getCol().y){
+			nodeManager.get("Player")->setVel(0,0);
+		}
 		nodeManager.get("Player")->setAnim(0);
 	}
 
@@ -665,9 +671,13 @@ void gameInit(){
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j <  MAP_COLUMNS - 1; j++){
 			if(i == 0 || i == MAP_ROWS-1 || j == 0 || j == MAP_COLUMNS-2) map_grid[i][j] =1;
+
 			else map_grid[i][j] = 0;
 			//map_grid[i][j] = 0;
 		}
+	}
+	for(int i = 0; i < 5; i++){
+		map_grid[12][i] = 1;
 	}
 	/*for(int i = 0; i < MAP_COLUMNS; i++){
 		map_grid[MAP_ROWS - 1][i] = 0;
@@ -678,7 +688,6 @@ void gameInit(){
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j < MAP_COLUMNS - 1; j++){
 			if(map_grid[i][j] == 1){
-				cout << i*TILE_SIZE << " " << j*TILE_SIZE << endl;
 				tiles.push_back(*new Tile(12.5+j*TILE_SIZE,12.5+i*TILE_SIZE));
 			}
 			else{
