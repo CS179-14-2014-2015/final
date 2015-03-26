@@ -239,8 +239,9 @@ protected:
 	short type;
 	bool loaded;
 	bool cstatic;
+	bool collided;
 public:
-	Node() : loaded(false){}
+	Node() : loaded(false), collided(false){}
 	virtual ~Node(){};
 
 	virtual bool isLoaded() const{
@@ -259,7 +260,7 @@ public:
 		return;
 	}
 	virtual void move(){
-		if(loaded){
+		if(loaded && !collided){
 			//setPos(pos.x + vel.x*TFPS, pos.y + vel.y*TFPS);
 			//move()
 			spr.move(vel.x*TFPS, vel.y*TFPS);
@@ -310,8 +311,10 @@ public:
 		sf::Rect<float> mine = getBoundingRect();
 		sf::Rect<float> other = n->getBoundingRect();
 		if(mine.intersects(other)){
+			collided = true;
 			return true;
 		}
+		collided = false;
 		return false;
 	}
 	virtual void collide(Node* n){}; 
@@ -349,7 +352,8 @@ public:
 		}
 	}
 	void move(){
-		if(loaded){
+		if(loaded && !collided && abs(getVel().x+getVel().y) > 0.0001){
+			cout << "MOVED" << endl;
 			//setPos(pos.x + vel.x*TFPS, pos.y + vel.y*TFPS);
 			aspr.move(vel.x*TFPS, vel.y*TFPS);
 		}
@@ -404,10 +408,14 @@ public:
 	}
 	virtual bool isColliding(Node* n){
 		sf::Rect<float> mine = getBoundingRect();
+		mine.left += getVel().x + 0.0001;
+		mine.top += getVel().y + 0.0001;
 		sf::Rect<float> other = n->getBoundingRect();
 		if(mine.intersects(other)){
+			collided = true;
 			return true;
 		}
+		collided = false;
 		return false;
 	}
 
@@ -417,14 +425,16 @@ public:
 		sf::Rect<float> other = n->getBoundingRect();
 		sf::Rect<float> inter = sf::Rect<float>();
 		if(mine.intersects(other, inter)){
-			cout<< getVel().x << " "<< getVel().y  << endl;
+			cout<< mine.left << " "<<  other.left << endl;
 			if(getPos().x > inter.left){
-				cout << "LEFT" << endl;
-				cout << "BOUNCE " << -(other.left + n->getWidth()) + inter.left - aspr.getOrigin().x/2 << endl;
-				getAnimatedSprite().move(-(other.left + n->getWidth()) + inter.left - aspr.getOrigin().x/2,0);
+				//cout << "LEFT" << endl;
+				//cout << "BOUNCE " << other.width << endl;
+				
+				getAnimatedSprite().move((other.left + other.width) - inter.left,0);
 				setVel(0,getVel().y);
 			}else{
 				cout << "RIGHT" << endl;
+				getAnimatedSprite().move(other.left - (inter.left + inter.width),0);
 				setVel(0,getVel().y);
 			} 
 			if(getPos().y > inter.top){
@@ -658,6 +668,8 @@ void gameInit(){
 		map_grid[MAP_ROWS - 1][i] = 0;
 	}*/
 	map_grid[14][0]= 1;
+	map_grid[14][10]= 1;
+	map_grid[15][1]= 1;
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j < MAP_COLUMNS - 1; j++){
 			if(map_grid[i][j] == 1){
