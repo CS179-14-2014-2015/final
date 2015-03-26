@@ -25,12 +25,12 @@ const int TILE_SIZE = 25;
 const int MAP_ROWS = HEIGHT/TILE_SIZE;
 const int MAP_COLUMNS = WIDTH/TILE_SIZE + 1;
 const int FPS = 60;
+const float PLAYER_VY = 5;
 const int PLAYER_W = 25;
 const int PLAYER_H = 50;
-const float PLAYER_VY = 4;
-const float PLAYER_VX = 3.5;
 const float TFPS = 100.0f/FPS;
-const float GRAV = 9.8*TFPS/100;
+const float PLAYER_VX = 3.5;
+const double GRAV = 9.8/(FPS*1.0);
 //const int FLOOR_WIDTH = WIDTH;
 //const int FLOOR_HEIGHT = 30;
 //const float SWORD_INC = PLAYER_H/5;
@@ -317,12 +317,6 @@ public:
 		}
 		return sf::Vector2i();
 	}
-	virtual int getType(){
-		if(loaded){
-			return type;
-		}
-		return -1;
-	}
 	virtual sf::Sprite& getSprite(){
 		return spr;
 	}
@@ -395,6 +389,7 @@ public:
 	}
 	void move(){
 		if(loaded && abs(getVel().x+getVel().y) > 0.0001){
+
 			aspr.move(col.x*vel.x*TFPS, col.y*vel.y*TFPS);
 		}
 	}
@@ -500,10 +495,13 @@ public:
 	}
 };
 
+vector<Node> tiles;
+
+
 class NodeManager{
 protected:
 	map<string, Node*> nodes;
-	vector<Node> tiles;
+	map<Node*, Node*> colls;
 
 	struct nodeDeallocator{
 		void operator()(const pair<string, Node*> &p) const{
@@ -540,9 +538,6 @@ public:
 			itr->second->draw(rw);
 			itr++;
 		}
-		for(int i = 0; i < tiles.size(); i++){
-			tiles[i].draw(window);
-		}
 	}
 	void updateAll(){
 		map<string,Node*>::const_iterator itr = nodes.begin();
@@ -552,51 +547,21 @@ public:
 			itr++;
 		}
 	}
-	void collideAll(){
+	/*void collideAll(){
 		map<string,Node*>::const_iterator objx = nodes.begin();
 		map<string,Node*>::const_iterator objy = nodes.begin();
+		objy++;
 		while(objx != nodes.end()){
-			
-			//object to objet
-			objy = nodes.begin();
-			objy++;
-			if(objx != objy){
-				while(objy != nodes.end()){
-					if(objy->second->getType() == 1){
-					}else if(objx->second->isColliding(objy->second, sf::Vector2i(1,1))){
-						objx->second->collide(objy->second, sf::Vector2i(1,1));
-					}
-					objy++;
+			if(objx == objy) continue;
+			while(objy != nodes.end()){
+				if(objx->second->isColliding(objy->second)){
+					objx->second->collide(objy->second);
 				}
-			}
-			
-			//axis test
-			Node *p = objx->second;
-			p->setCol(1,1);
-			sf::Vector2f p_pos = p->getPos();
-			sf::Vector2f p_size = sf::Vector2f(p->getWidth(),p->getHeight());
-			for(int i = 0; i < tiles.size(); i++){
-				sf::Vector2f t_pos = tiles[i].getPos();
-				if(t_pos.x >= p_pos.x - p_size.x/2 && t_pos.x <= p_pos.x + p_size.x/2){
-					if(p->isColliding(&tiles[i], sf::Vector2i(0,1))){
-						p->collide(&tiles[i], sf::Vector2i(0,1));
-						p->setCol(p->getCol().x,0);
-					}
-				}
-				if(t_pos.y >= p_pos.y - p_size.y/2 && t_pos.y <= p_pos.y + p_size.y/2){
-					if(p->isColliding(&tiles[i], sf::Vector2i(1,0))){
-						p->collide(&tiles[i], sf::Vector2i(1,0));
-						p->setCol(0,p->getCol().y);
-					}
-				}
+				objy++;
 			}
 			objx++;
 		}
-	}
-
-	void addTile(int x, int y){
-		tiles.push_back(*new Tile(x,y));
-	}
+	}*/
 
 	void moveAll(){
 		map<string,Node*>::const_iterator itr = nodes.begin();
@@ -610,8 +575,51 @@ public:
 
 NodeManager nodeManager;
 
+void collideTiles(){
+	Node* p = nodeManager.get("Player");
+	p->setCol(1,1);
+	sf::Vector2f p_pos = p->getPos();
+	sf::Vector2f p_size = sf::Vector2f(p->getWidth(),p->getHeight());
+	for(int i = 0; i < tiles.size(); i++){
+		sf::Vector2f t_pos = tiles[i].getPos();
+		if(t_pos.x >= p_pos.x - p_size.x/2 && t_pos.x <= p_pos.x + p_size.x/2){
+			if(p->isColliding(&tiles[i], sf::Vector2i(0,1))){
+				p->collide(&tiles[i], sf::Vector2i(0,1));
+				p->setCol(1,0);
+			}
+		}
+		if(t_pos.y >= p_pos.y - p_size.y/2 && t_pos.y <= p_pos.y + p_size.y/2){
+			if(p->isColliding(&tiles[i], sf::Vector2i(1,0))){
+				p->collide(&tiles[i], sf::Vector2i(1,0));
+				p->setCol(0,1);
+			}
+		}
+	}
+
+	Node* p2 = nodeManager.get("Player2"); 
+	p_pos = p2->getPos();
+	p2->setCol(1,1);
+	p_size = sf::Vector2f(p2->getWidth(),p2->getHeight());
+	for(int i = 0; i < tiles.size(); i++){
+		sf::Vector2f t_pos = tiles[i].getPos();
+		if(t_pos.x >= p_pos.x - p_size.x/2 && t_pos.x <= p_pos.x + p_size.x/2){
+			if(p2->isColliding(&tiles[i], sf::Vector2i(0,1))){
+				p2->collide(&tiles[i], sf::Vector2i(0,1));
+				p2->setCol(1,0);
+			}
+		}
+		if(t_pos.y >= p_pos.y - p_size.y/2 && t_pos.y <= p_pos.y + p_size.y/2){
+			if(p2->isColliding(&tiles[i], sf::Vector2i(1,0))){
+				p2->collide(&tiles[i], sf::Vector2i(1,0));
+				p2->setCol(0,1);
+			}
+		}
+	}
+
+}
+
 void collision(){
-	nodeManager.collideAll();
+	collideTiles();
 }
 
 vector<bool> keys;
@@ -633,6 +641,8 @@ void input(){
 	pollKey(sf::Keyboard::Left);
 	pollKey(sf::Keyboard::Right);
 	pollKey(sf::Keyboard::Up);
+	//cout << keys.size() << endl;
+	
 	
 	if(keys[sf::Keyboard::A]){
 		p1->setVel(-PLAYER_VX,p1->getVel().y);
@@ -659,6 +669,7 @@ void input(){
 			p1->setAnim(0);
 		}
 	}
+
 	
 	if(keys[sf::Keyboard::Left]){
 		p2->setVel(-PLAYER_VX,p2->getVel().y);
@@ -687,6 +698,10 @@ void input(){
 	}
 }
 
+void animate(){
+
+}
+
 void logic(){
 	nodeManager.updateAll();
 	collision();
@@ -696,18 +711,21 @@ void logic(){
 void render(){
 	window.clear(sf::Color::White);
 	nodeManager.drawAll(window);
+	for(int i = 0; i < tiles.size(); i++){
+		tiles[i].draw(window);
+	}
     window.display();
 }
 
 void gameLoop(){
 	frameTime = gameClock.restart();
 	input();
+	animate();
 	logic();
 	render();
 }
 
 void gameInit(){
-
 	for(int i = 0 ; i < sf::Keyboard::KeyCount; i++){
 		keys.push_back(false);
 	};
@@ -731,12 +749,14 @@ void gameInit(){
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j < MAP_COLUMNS - 1; j++){
 			if(map_grid[i][j] == 1){
-				nodeManager.addTile(12.5+j*TILE_SIZE,12.5+i*TILE_SIZE);
+				tiles.push_back(*new Tile(12.5+j*TILE_SIZE,12.5+i*TILE_SIZE));
 			}
 			else{
 			}
 		}
 	}
+
+
 }
 
 void sysInit(){
@@ -748,12 +768,17 @@ void init(){
 	gameInit();
 }
 
-int main(){
+int main()
+{
 	init();
-    while (window.isOpen()){
+
+    while (window.isOpen())
+    {
         sf::Event event;
-		while (window.pollEvent(event)){	
-            if(event.type == sf::Event::Closed) window.close();
+        while (window.pollEvent(event))
+        {	
+            if (event.type == sf::Event::Closed)
+                window.close();
         }
 		gameLoop();
     }
