@@ -13,9 +13,9 @@
 #include <iostream>
 #include <cassert>
 #include <vector>
+#include <fstream>
 
 using namespace std;
-//using namespace sf;
 
 const int WIDTH = 1200;
 const int HEIGHT = 400;
@@ -374,7 +374,7 @@ public:
 		load("textures/walkplayer.png");
 		load("textures/jumpplayer.png");
 		load("textures/attackplayer.png");
-		recharge = 0; //FOR ATTACKS
+		recharge = 0; 
 		for(int i = 0; i < 4; i++){
 			anims.push_back(*new Animation);
 			anims[i].setSpriteSheet(txts[i]);
@@ -768,7 +768,6 @@ void input(){
 				else{
 					nodeManager.addAttack(p1->getPos().x - p1->getWidth() -1,p1->getPos().y,p1,false);
 				}
-				cout << "player1 attack" << endl;
 				p1->setAnim(3);
 				i1 = false;
 				p1->setRecharge(CHARGE_T);
@@ -814,7 +813,6 @@ void input(){
 				else{
 					nodeManager.addAttack(p2->getPos().x - p2->getWidth() -1,p2->getPos().y,p2,false);
 				}
-				cout << "player 2 attack" << endl;
 				p2->setAnim(3);
 				i2 = false;
 				p2->setRecharge(CHARGE_T);
@@ -862,17 +860,18 @@ void gameInit(){
 	nodeManager.get("Player2")->getAnimatedSprite().setScale(-1,1);
 	nodeManager.get("Player")->setPos(P1_START_POSX,HEIGHT-PLAYER_H/2.0-25);
 	nodeManager.get("Player2")->setPos(P2_START_POSX,HEIGHT-PLAYER_H/2.0-25);
-
-	for(int i = 0; i < MAP_ROWS; i++){
-		for(int j = 0; j <  MAP_COLUMNS - 1; j++){
-			if(i == 0 || i == MAP_ROWS-1 || j == 0 || j == MAP_COLUMNS-2) map_grid[i][j] =1;
-			else map_grid[i][j] = 0;
+	ifstream map( "resources/map.txt" );
+	if(map.is_open()){
+		for(int i = 0; i < MAP_ROWS; i++){
+			for(int j = 0; j < MAP_COLUMNS -1; j++){
+				int type;
+				map >> type;
+				map_grid[i][j] = type;
+			}
+			cout << endl;
 		}
 	}
-	for(int i = 0; i < 5; i++){
-		map_grid[12][i] = 1;
-	}
-
+	map.close();
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j < MAP_COLUMNS - 1; j++){
 			if(map_grid[i][j] == 1){
