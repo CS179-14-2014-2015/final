@@ -484,6 +484,7 @@ public:
 		load("textures/floor.png");
 		assert(isLoaded());
 		setPos(x,y);
+		type = 2;
 		spr.setOrigin(12.5,12.5);
 	}
 	~Tile(){};
@@ -594,6 +595,26 @@ void collideTiles(){
 			}
 		}
 	}
+
+	Node* p2 = nodeManager.get("Player2"); 
+	p_pos = p2->getPos();
+	p_size = sf::Vector2f(p2->getWidth(),p2->getHeight());
+	for(int i = 0; i < tiles.size(); i++){
+		sf::Vector2f t_pos = tiles[i].getPos();
+		if(t_pos.x >= p_pos.x - p_size.x/2 && t_pos.x <= p_pos.x + p_size.x/2){
+			if(p2->isColliding(&tiles[i], sf::Vector2i(0,1))){
+				p2->collide(&tiles[i], sf::Vector2i(0,1));
+				p2->setCol(1,0);
+			}
+		}
+		if(t_pos.y >= p_pos.y - p_size.y/2 && t_pos.y <= p_pos.y + p_size.y/2){
+			if(p2->isColliding(&tiles[i], sf::Vector2i(1,0))){
+				p2->collide(&tiles[i], sf::Vector2i(1,0));
+				p2->setCol(0,1);
+			}
+		}
+	}
+
 }
 
 void collision(){
@@ -620,15 +641,20 @@ void input(){
 	}
 
 	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
-		nodeManager.get("Player2")->setVel(-PLAYER_VX,0);
+		nodeManager.get("Player2")->setVel(-PLAYER_VX,nodeManager.get("Player2")->getVel().y);
 		nodeManager.get("Player2")->getAnimatedSprite().setScale(-1,1);
 		nodeManager.get("Player2")->setAnim(1);
 	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
-		nodeManager.get("Player2")->setVel(PLAYER_VX,0);
+		nodeManager.get("Player2")->setVel(PLAYER_VX,nodeManager.get("Player2")->getVel().y);
 		nodeManager.get("Player2")->getAnimatedSprite().setScale(1,1);
 		nodeManager.get("Player2")->setAnim(1);
+	}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)){
+		if(nodeManager.get("Player2")->getCol().y == 0)nodeManager.get("Player2")->setVel(nodeManager.get("Player2")->getVel().x,-PLAYER_VY);
+		nodeManager.get("Player2")->setAnim(2);
 	}else{
-		nodeManager.get("Player2")->setVel(0,0);
+		if(!nodeManager.get("Player2")->getCol().y){
+			nodeManager.get("Player2")->setVel(0,0);
+		}
 		nodeManager.get("Player2")->setAnim(0);
 	}
 }
@@ -671,27 +697,19 @@ void gameInit(){
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j <  MAP_COLUMNS - 1; j++){
 			if(i == 0 || i == MAP_ROWS-1 || j == 0 || j == MAP_COLUMNS-2) map_grid[i][j] =1;
-
 			else map_grid[i][j] = 0;
-			//map_grid[i][j] = 0;
 		}
 	}
 	for(int i = 0; i < 5; i++){
 		map_grid[12][i] = 1;
 	}
-	/*for(int i = 0; i < MAP_COLUMNS; i++){
-		map_grid[MAP_ROWS - 1][i] = 0;
-	}
-	map_grid[14][0]= 1;
-	map_grid[14][10]= 1;
-	map_grid[15][1]= 1;*/
+
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j < MAP_COLUMNS - 1; j++){
 			if(map_grid[i][j] == 1){
 				tiles.push_back(*new Tile(12.5+j*TILE_SIZE,12.5+i*TILE_SIZE));
 			}
 			else{
-				//nothing
 			}
 		}
 	}
