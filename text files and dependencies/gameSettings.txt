@@ -1,0 +1,10 @@
+DO NOT CHANGE THE ORDER OF LINES OR SPACING
+
+FILENAME OF SONG:
+AC-DC - Highway to Hell.mp3
+
+BPM:
+114.9
+
+DIFFICULTY (Easy, Normal, Hard):
+Normal
