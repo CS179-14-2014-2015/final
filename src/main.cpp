@@ -701,6 +701,7 @@ public:
 
 			//Object to attacks
 			for(int i = 0; i < attacks.size(); i++){
+				if( p->isDead()) break;
 				if(attacks[i].getSource() == p) continue;
 				if(p->isColliding(&attacks[i],sf::Vector2i(1,1))){
 					p->setDead(true);
@@ -911,7 +912,7 @@ void gameInit(){
 	ksp1.setPosition(TILE_SIZE,TILE_SIZE);
 	ksp2.setCharacterSize(24);
 	ksp2.setColor(sf::Color::Black);
-	ksp2.setPosition(WIDTH - (TILE_SIZE*6),TILE_SIZE);
+	ksp2.setPosition(WIDTH - (TILE_SIZE*8),TILE_SIZE);
 	ksh.setColor(sf::Color::Black);
 	ksh.setPosition(WIDTH/2 - (TILE_SIZE*6),TILE_SIZE);
 	ksh.setCharacterSize(24);
