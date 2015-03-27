@@ -12,6 +12,7 @@
 #include <map>
 #include <iostream>
 #include <cassert>
+#include <sstream>
 #include <vector>
 #include <fstream>
 
@@ -36,11 +37,13 @@ const float GRAV = 9.8*TFPS/100;
 
 
 int map_grid[MAP_ROWS][MAP_COLUMNS];
-
+int highest_ks;
 sf::RenderWindow window(sf::VideoMode(WIDTH-1,HEIGHT-1), "Glorified Rekts");
 sf::Clock gameClock;
 sf::Clock frameClock;
 sf::Time frameTime;
+sf::Font font;
+sf::Text ksp1,ksp2,ksh;
 
 //some references from http://www.gamefromscratch.com/page/Game-From-Scratch-CPP-Edition.aspx
 //and animation references from https://github.com/LaurentGomila/SFML/wiki/Source:-AnimatedSprite
@@ -244,6 +247,10 @@ public:
 	Node() : loaded(false), dead(false){}
 	virtual ~Node(){};
 
+	virtual int getKs(){return -1;}
+	virtual void reset(){};
+	virtual void kill(){};
+
 	virtual bool isLoaded() const{
 		return loaded;
 	}
@@ -366,6 +373,7 @@ protected:
 	vector<sf::Texture> txts;
 	Animation* currAnim;
 	bool face;
+	int ks;
 	short recharge;
 public:
 	Player(){
@@ -375,6 +383,7 @@ public:
 		load("textures/jumpplayer.png");
 		load("textures/attackplayer.png");
 		recharge = 0; 
+		ks = 0;
 		for(int i = 0; i < 4; i++){
 			anims.push_back(*new Animation);
 			anims[i].setSpriteSheet(txts[i]);
@@ -393,6 +402,18 @@ public:
 	};
 	~Player(){};
 	
+	int getKs(){
+		return ks;
+	}
+
+	void reset(){
+		ks = 0;
+	}
+
+	void kill(){
+		ks++;
+	}
+
 	short getRecharge(){
 		if(loaded)
 			return recharge;
@@ -683,6 +704,16 @@ public:
 				if(attacks[i].getSource() == p) continue;
 				if(p->isColliding(&attacks[i],sf::Vector2i(1,1))){
 					p->setDead(true);
+					if(attacks[i].getSource() == get("Player")){
+						get("Player")->kill();
+					}
+					else{
+						get("Player2")->kill();
+					}
+					if(attacks[i].getSource()->getKs() > highest_ks){
+						highest_ks = p->getKs();
+					}
+					p->reset();
 					respawnClock.restart();
 				}
 			}
@@ -732,7 +763,7 @@ void input(){
 	pollKey(sf::Keyboard::A);
 	pollKey(sf::Keyboard::D);
 	pollKey(sf::Keyboard::W);
-	pollKey(sf::Keyboard::G);
+	pollKey(sf::Keyboard::LAlt);
 	pollKey(sf::Keyboard::Left);
 	pollKey(sf::Keyboard::Right);
 	pollKey(sf::Keyboard::Up);
@@ -760,7 +791,7 @@ void input(){
 			p1->setAnim(2);
 			i1 = false;
 		}
-		if(keys[sf::Keyboard::G]){
+		if(keys[sf::Keyboard::LAlt]){
 			if(p1->getRecharge() == 0){
 				if(p1->getFace()){
 				nodeManager.addAttack(p1->getPos().x + p1->getWidth() + 1,p1->getPos().y,p1,true);
@@ -839,6 +870,20 @@ void logic(){
 void render(){
 	window.clear(sf::Color::White);
 	nodeManager.drawAll(window);
+	Node* p =  nodeManager.get("Player");
+	Node* p2 = nodeManager.get("Player2");
+	stringstream kappa;
+	stringstream kappa2;
+	stringstream kappa3;
+	kappa << "Player 1: " << p->getKs();
+	kappa2 << "Player 2: " << p2->getKs();
+	kappa3 << "Highest Killstreak: " << highest_ks;
+	ksp1.setString(kappa.str());
+	ksp2.setString(kappa2.str());
+	ksh.setString(kappa3.str());
+	window.draw(ksp1);
+	window.draw(ksp2);
+	window.draw(ksh);
     window.display();
 }
 
@@ -855,6 +900,22 @@ void gameInit(){
 		keys.push_back(false);
 	};
 
+	if(!font.loadFromFile("resources/arial.ttf")){
+	}
+
+	ksp1.setFont(font);
+	ksp2.setFont(font);
+	ksh.setFont(font);
+	ksp1.setCharacterSize(24);
+	ksp1.setColor(sf::Color::Black);
+	ksp1.setPosition(TILE_SIZE,TILE_SIZE);
+	ksp2.setCharacterSize(24);
+	ksp2.setColor(sf::Color::Black);
+	ksp2.setPosition(WIDTH - (TILE_SIZE*6),TILE_SIZE);
+	ksh.setColor(sf::Color::Black);
+	ksh.setPosition(WIDTH/2 - (TILE_SIZE*6),TILE_SIZE);
+	ksh.setCharacterSize(24);
+	
 	nodeManager.add("Player",new Player());
 	nodeManager.add("Player2",new Player());
 	nodeManager.get("Player2")->getAnimatedSprite().setScale(-1,1);
@@ -868,10 +929,20 @@ void gameInit(){
 				map >> type;
 				map_grid[i][j] = type;
 			}
-			cout << endl;
 		}
 	}
 	map.close();
+
+	ifstream high_ks_stream("src/ks.txt");
+	if(high_ks_stream.is_open()){
+		high_ks_stream >> highest_ks;
+	}
+	else{
+		highest_ks = 0;
+	}
+	high_ks_stream.close();
+	
+
 	for(int i = 0; i < MAP_ROWS; i++){
 		for(int j = 0; j < MAP_COLUMNS - 1; j++){
 			if(map_grid[i][j] == 1){
@@ -901,6 +972,13 @@ int main(){
         }
 		gameLoop();
     }
+
+	ofstream fout;
+	fout.open("src/ks.txt");
+	if(fout.is_open()){
+		fout << highest_ks;
+		fout.close();
+	}
     return 0;
 }
 
