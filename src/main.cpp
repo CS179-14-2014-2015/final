@@ -711,7 +711,7 @@ public:
 						get("Player2")->kill();
 					}
 					if(attacks[i].getSource()->getKs() > highest_ks){
-						highest_ks = p->getKs();
+						highest_ks = attacks[i].getSource()->getKs();
 					}
 					p->reset();
 					respawnClock.restart();
@@ -933,7 +933,7 @@ void gameInit(){
 	}
 	map.close();
 
-	ifstream high_ks_stream("src/ks.txt");
+	ifstream high_ks_stream("resources/ks.txt");
 	if(high_ks_stream.is_open()){
 		high_ks_stream >> highest_ks;
 	}
@@ -974,7 +974,7 @@ int main(){
     }
 
 	ofstream fout;
-	fout.open("src/ks.txt");
+	fout.open("resources/ks.txt");
 	if(fout.is_open()){
 		fout << highest_ks;
 		fout.close();
