@@ -1,0 +1,8 @@
+C:\Users\N550\Desktop\PokemonOU\PokemonOU\bin\Debug\PokemonOU.exe
+C:\Users\N550\Desktop\PokemonOU\PokemonOU\bin\Debug\PokemonOU.pdb
+C:\Users\N550\Desktop\PokemonOU\PokemonOU\obj\x86\Debug\PokemonOU.Form1.resources
+C:\Users\N550\Desktop\PokemonOU\PokemonOU\obj\x86\Debug\PokemonOU.Properties.Resources.resources
+C:\Users\N550\Desktop\PokemonOU\PokemonOU\obj\x86\Debug\PokemonOU.csproj.GenerateResource.Cache
+C:\Users\N550\Desktop\PokemonOU\PokemonOU\obj\x86\Debug\PokemonOU.exe
+C:\Users\N550\Desktop\PokemonOU\PokemonOU\obj\x86\Debug\PokemonOU.pdb
+C:\Users\N550\Desktop\PokemonOU\PokemonOU\obj\x86\Debug\PokemonOU.csprojResolveAssemblyReference.cache
