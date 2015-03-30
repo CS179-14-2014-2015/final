@@ -13,12 +13,17 @@
 //Screen dimension constants
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 300;
-
 const int FPS = 30;
+const int TOTAL_DATA = 10;
+
+int player1Score = 0;
+int player2Score = 0;
+
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 //The window renderer
 SDL_Renderer* gRenderer = NULL;
+
 
 //Texture wrapper class from LazyFoo
 class LTexture
@@ -231,6 +236,8 @@ float randomRange( float Min, float Max )
 {
     return ((float(rand()) / float(RAND_MAX)) * (Max - Min)) + Min;
 }
+
+int gData[ TOTAL_DATA ];
 
 LTexture::LTexture()
 {
@@ -505,11 +512,82 @@ bool loadMedia()
         gSpriteClips[ 2 ].w =  26;
         gSpriteClips[ 2 ].h =  18;
 	}
+	SDL_RWops* file = SDL_RWFromFile( "high_score.ini", "r" );
+	if( file == NULL )
+    {
+        printf( "Warning, unable to open file! SDL Error: %s\n", SDL_GetError() );
+
+        //Create file for writing
+        file = SDL_RWFromFile( "high_score.ini", "w" );
+        if( file != NULL )
+        {
+            printf( "New file created!\n" );
+            //Initialize data
+            for( int i = 0; i < TOTAL_DATA; ++i )
+            {
+                gData[i] = 0;
+                SDL_RWwrite( file, &gData[i], sizeof(int), 1 );
+            }
+            SDL_RWclose( file );
+        }
+        else
+        {
+            printf( "Error: Unable to create file! SDL Error: %s\n", SDL_GetError() );
+            success = false;
+        }
+    }
+    else
+    {
+        printf( "Reading file...!\n" );
+        std::cout << "High Scores:\n";
+        for( int i = 0; i < TOTAL_DATA; ++i )
+        {
+            SDL_RWread( file, &gData[i], sizeof(int), 1 );
+            std::cout << i+1 << ": " << gData[i] << "\n";
+        }
+        SDL_RWclose( file );
+    }
+
 	return success;
 }
 
 void close()
 {
+    SDL_RWops* file = SDL_RWFromFile( "high_score.ini", "w" );
+    if( file != NULL )
+    {
+        /*
+        int temp1 = player1Score;
+        int temp2 = player2Score;
+        int temp3 = 0;
+        for( int i = 0; i < TOTAL_DATA; ++i )
+        {
+            if( temp1 < temp2 )
+            {
+                temp3 = temp2;
+                temp2 = temp1;
+                temp1 = temp3;
+            }
+            if( temp1 > gData[i] )
+            {
+                temp3 = gData[i];
+                gData[i] = temp1;
+                temp1 = temp3;
+            }
+        }
+        std::cout << "High Scores:\n";
+        */
+        for( int i = 0; i < TOTAL_DATA; ++i )
+        {
+            SDL_RWwrite( file, &gData[i], sizeof(int), 1 );
+            //std::cout << i+1 << ": " << gData[i] << "\n";
+        }
+        SDL_RWclose( file );
+    }
+    else
+    {
+        printf( "Error: Unable to save file! %s\n", SDL_GetError() );
+    }
 	//Free loaded images
 	gBirdSpriteSheetTexture.free();
 	gBGTexture.free();
@@ -918,6 +996,31 @@ int main( int argc, char* args[] )
                     SDL_Delay( ( 1000 / FPS ) - fps.get_ticks() );
                 }
 			}
+			player1Score = score.display;
+			player2Score = score2.display;
+			int temp1 = player1Score;
+            int temp2 = player2Score;
+            int temp3 = 0;
+            for( int i = 0; i < TOTAL_DATA; ++i )
+            {
+                if( temp1 < temp2 )
+                {
+                    temp3 = temp2;
+                    temp2 = temp1;
+                    temp1 = temp3;
+                }
+                if( temp1 > gData[i] )
+                {
+                    temp3 = gData[i];
+                    gData[i] = temp1;
+                    temp1 = temp3;
+                }
+            }
+            std::cout << "High Scores:\n";
+            for( int i = 0; i < TOTAL_DATA; ++i )
+            {
+                std::cout << i+1 << ": " << gData[i] << "\n";
+            }
 		}
 	}
 	//Free resources and close SDL
