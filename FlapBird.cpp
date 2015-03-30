@@ -20,7 +20,6 @@ SDL_Window* gWindow = NULL;
 //The window renderer
 SDL_Renderer* gRenderer = NULL;
 
-
 //Texture wrapper class from LazyFoo
 class LTexture
 {
