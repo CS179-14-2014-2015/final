@@ -1,7 +1,7 @@
-#Finals  (deadline: 2015-03-XX)
+John Christian A. Velasco
+BS MIS IV
+ID 114173
+Contact: 0916-593-7609
+E-mail: adezeos@yahoo.com
 
-Submit your finals here. Here are a couple of reminders:
-
-1. Do not commit compiler or IDE-generated files (the *.o, *.pdb among others)
-2. Documentation, especially on how to build and play the game, is appreciated.
-3. Also commit a PDF version of the [Certificate of Authorship for groups](http://www.admu.edu.ph/ls/sose/iscs/downloads).
+This is my submission for the CS179.14 finals.
