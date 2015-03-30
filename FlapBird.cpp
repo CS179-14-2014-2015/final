@@ -139,7 +139,7 @@ class Vector2D
 class Timer
 {
     public:
-        Timer();
+        Timer( double pX, double pY );
         void start();
         void stop();
         void pause();
@@ -147,6 +147,11 @@ class Timer
         int get_ticks();
         bool is_started();
         bool is_paused();
+        void update();
+        void render();
+        double posX, posY;
+        int display;
+
     private:
         int startTicks;
         int pausedTicks;
@@ -195,6 +200,7 @@ class Bird
         short height = gBirdSpriteSheetTexture.getHeight();
         double posX, posY;
 
+        bool hasCollided = false;
 
     private:
         std::vector<short> OBBx{ 0, 0, 0, 0 };
@@ -211,7 +217,6 @@ class Bird
         //OBB
         SDL_Rect* currentClip = &gSpriteClips[1];
         bool spriteFlag = false;
-        bool hasCollided = false;
 };
 
 //Starts up SDL and creates window
@@ -529,27 +534,15 @@ void close()
 	SDL_Quit();
 }
 
-/*
-void drawBitmapText( std::string caption, int score, float r, float g, float b, float x, float y, float z )
-{
-    glColor3f( r, g, b );
-    glRasterPos3f( x, y, z );
-    std::stringstream strm;
-    strm << caption << score;
-    std::string text = strm.str();
-    for( std::string::iterator it = text.begin(); it != text.end(); ++it )
-    {
-        glutBitmapCharacter( GLUT_BITMAP_HELVETICA_10, *it );
-    }
-}
-*/
-
-Timer::Timer()
+Timer::Timer( double pX, double pY )
 {
     startTicks = 0;
     pausedTicks = 0;
     paused = false;
     started = false;
+    posX = pX;
+    posY = pY;
+    display = 0;
 }
 
 void Timer::start()
@@ -607,6 +600,30 @@ bool Timer::is_started()
 bool Timer::is_paused()
 {
     return paused;
+}
+
+void Timer::update()
+{
+    if( started && !paused )
+    {
+        display += 1;
+    }
+    //display = display + get_ticks();
+}
+
+void Timer::render()
+{
+    /*
+    std::ostringstream ss;
+    ss << display;
+    gFont = TTF_OpenFont( "FlappyBirdy.ttf", 28 );
+    SDL_Color color = { 255, 0, 0 };
+    std::string dstring = ss.str().c_str();
+    //std::cout << dstring << "\n";
+    gScoreTexture.loadFromRenderedText( dstring, color );
+    //gScoreTexture.loadFromRenderedText( std::to_string( display ), color );
+    gScoreTexture.render( 15, 15 );
+    */
 }
 
 Bird::Bird( double pX, double pY )
@@ -805,8 +822,9 @@ int main( int argc, char* args[] )
 			SDL_Event e;
             Bird bird = Bird( 100, 100 );
             Bird bird2 = Bird( 150, 100 );
-            Timer fps;
-            //Score score = Score( 15, 15 );
+            Timer fps = Timer( 0, 0 );
+            Timer score = Timer( 15, 15 );
+            Timer score2 = Timer( 15, 45 );
             int scrollingOffset = 0;
 
             std::vector<Pipes> pipes;
@@ -817,9 +835,10 @@ int main( int argc, char* args[] )
             //While application is running
 			while( !quit )
 			{
-                //srand(time(0));
                 fps.start();
-                //score.start();
+                score.start();
+                score2.start();
+
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) != 0 )
 				{
@@ -849,6 +868,25 @@ int main( int argc, char* args[] )
 
                 bird.OBBCollision( pipes );
                 bird2.OBBCollision( pipes );
+                if( bird.hasCollided && !score.is_paused() )
+                {
+                    score.pause();
+                }
+                else if( score.is_paused() )
+                {
+                    score.unpause();
+                }
+                score.update();
+
+                if( bird2.hasCollided && !score2.is_paused() )
+                {
+                    score2.pause();
+                }
+                else if( score2.is_paused() )
+                {
+                    score2.unpause();
+                }
+                score2.update();
 
                 //Scroll background
 				scrollingOffset -= 2;
@@ -869,7 +907,10 @@ int main( int argc, char* args[] )
                 }
 				bird.render();
 				bird2.render();
-				//score.render();
+				score.render();
+				score2.render();
+
+				std::cout << "Player 1: " << score.display << "     Player 2: " << score2.display << "\n";
 
 				//Update screen
 				SDL_RenderPresent( gRenderer );
