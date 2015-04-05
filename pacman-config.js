@@ -1,0 +1,54 @@
+pacman.config = {
+    
+    containerId: "pacman",
+    tileSize: 20,
+    colours: {
+        pacman: "rgb(255, 255, 0)",
+        frightGhost: "rgb(0, 0, 255)",
+        frightAlarm: "rgb(255, 255, 255)",
+        ghost: {
+            blinky: "rgb(255, 0, 0)",
+            inky: "rgb(0, 245, 255)",
+            pinky: "rgb(255, 192, 203)",
+            clyde: "rgb(255, 215, 0)"
+        },
+        background: "rgb(0, 0, 0)",
+        wall: "rgb(255, 153, 204)",
+        gate: "rgb(255, 255, 255)",
+        pellet: "rgb(0, 153, 67)",
+        powerPellet: "rgb(255, 255, 255)",
+        textColour: "rgb(255, 255, 255)",
+		teleport : "rgb(255, 000, 000)"
+    },
+    playField: {
+        
+        width: 38,
+        height: 25,
+        field: [
+            "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+            "WTCCCCCCCCCCCCCCCCWWCCCCCCCCCCCCCCCCTW",
+            "WCWWWWCWWWWCWWWWWCCCCWWWWWCWWWWCWWWWCW",
+            "WUWWWWCWWWWCWWWCWCWWCWCWWWCWWWWCWWWWUW",
+            "WCWWWWCWWWWCWWWCWCWWCWCWWWCWWWWCWWWWCW",
+            "WCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCW",
+            "WCWWWWCWWCWCWWCWWCWWCWWCWWCWCWWCWWWWCW",
+            "WCWWWWCWWCWCWWCWWCWWCWWCWWCWCWWCWWWWCW",
+            "WCCCCCCWWCCCCCCCCCWWCCCCCCCCCWWCCCCCCW",
+            "WCWWWWCWWWWCWWWWWNWWNWWWWWCWWWWCWWWWCW",
+            "WCWWWWCWWWWCWWNNNNHZNNNNWWCWWWWCWWWWCW",
+            "WCCCCCCCCCCCWWNWWWGGWWWNWWCCCCCCCCCCCW",
+            "WWWWWWCWWWWCWWNWNNNNNNWNWWCWWWWCWWWWWW",
+            "SSSSSSSSSSSCNNNWHNHXHNWNNNCSSSSSSSSSSS",
+            "WWWWWWCWWWWCWWNWNNNNNNWNWWCWWWWCWWWWWW",
+            "WCCCCCCWWWWCWWNWWWWWWWWNWWCWWWWCCCCCCW",
+            "WCWWWWCWWWWCWWNNNNNNNNNNWWCWWWWCWWWWCW",
+            "WCWWUCCWWWWCWWNWWWWWWWWNWWCWWWWCCUWWCW",
+            "WCWWCWCWWWWCWWNWWWWWWWWNWWCWWWWCWCWWCW",
+            "WCCCCCCCCCCCCCCCCCPNCCCCCCCCCCCCCCCCCW",
+            "WCWCWWCWWWWWCWWCWWWWWWCWWCWWWWWCWWCWCW",
+            "WCWCWWCWWWWWCWWCWWWWWWCWWCWWWWWCWWCWCW",
+            "WUWCWWCWUWUWCCCCCCCCCCCCCCWUWUWCWWCWUW",
+            "WTCCCCCCCCCCCWWWWWWWWWWWCCCCCCCCCCCCTW",
+            "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+        ]}
+};
